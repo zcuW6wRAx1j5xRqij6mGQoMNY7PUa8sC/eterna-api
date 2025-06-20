@@ -21,6 +21,7 @@ class AirCoinsEnums {
         'AIDUSDT'=>'THETAUSDT',
         'MACUSDT'=>'JUPUSDT',
         'HMAIUSDT'=>'TRBUSDT',
+        'DATXUSDT'=>'LTCUSDT',
     ];
     
 }
