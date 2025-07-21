@@ -39,7 +39,10 @@ class Transfer {
             }
             $derivativeWallet = UserWalletFutures::where('uid', $user->id)->first();
             if (!$derivativeWallet) {
-                throw new LogicException(__('Whoops! Something went wrong'));
+                $derivativeWallet = new UserWalletFutures();
+                $derivativeWallet->uid = $user->id;
+                $derivativeWallet->save();
+                $derivativeWallet = UserWalletFutures::where('uid', $user->id)->first();
             }
 
             switch($toWallet) {
