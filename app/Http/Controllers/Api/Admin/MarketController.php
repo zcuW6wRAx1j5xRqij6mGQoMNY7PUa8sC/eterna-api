@@ -2,13 +2,15 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\Models\BotTask;
 use App\Enums\AdminLogTypeEnums;
 use App\Enums\CommonEnums;
 use App\Enums\SymbolEnums;
 use App\Exceptions\LogicException;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
+use Internal\Market\Services\InfluxDB;
 use App\Http\Controllers\Api\ApiController;
-use App\Jobs\StartFakePrice;
-use App\Jobs\StopFakePrice;
 use App\Models\AdminUserLog;
 use App\Models\PlatformSymbolPrice;
 use App\Models\Symbol;
@@ -17,6 +19,11 @@ use App\Models\SymbolFutures;
 use App\Models\SymbolSpot;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
+use App\Internal\Tools\Services\KlineSimulator;
+use App\Internal\Tools\Services\BotTask as ServicesBotTask;
+use App\Http\Requests\Api\Admin\ChangeKlineTypeRequest;
+use App\Internal\Tools\Services\FinancialDataSimulator;
+use App\Http\Requests\Api\Admin\CreateMarketTaskRequest;
 use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -390,5 +397,429 @@ class MarketController extends ApiController
         $model->sell_spread = $request->get('sell_spread', 0);
         $model->save();
         return $this->ok(true);
+    }
+    
+    public function BotTaskList(Request $request)
+    {
+        $request->validate([
+            'page'      => 'numeric',
+            'page_size' => 'numeric',
+            'status'    => ['nullable', Rule::in([CommonEnums::Yes, CommonEnums::No])],
+        ]);
+        
+        $status = $request->get('status', null);
+        $query  = BotTask::query()->with(['symbol']);
+        if ($status !== null) {
+            $query->where('status', $status);
+        }
+        
+        $data = $query->orderBy('start_at')->paginate($request->get('page_size'), ['*'], null, $request->get('page'));
+        $data = listResp($data);
+        foreach ($data['items'] as &$item){
+            if($item['status'] == CommonEnums::Yes && Carbon::now()->isAfter(Carbon::parse($item['end_at']))){
+                $item['status'] = 3;
+            }
+            
+            $item['start_at'] = date('Y-m-d H:i:s', strtotime('+8 hour', strtotime($item['start_at'])));
+            $item['end_at'] = date('Y-m-d H:i:s', strtotime('+8 hour', strtotime($item['end_at'])));
+        }
+        
+        return $this->ok($data);
+    }
+    
+    /**
+     * 预览K线图数据
+     *
+     * 该方法用于根据用户请求生成预览版K线图数据，并将其存储到缓存中以供后续展示
+     * 它会首先验证交易对信息的正确性，然后通过模拟生成K线图数据，并将其缓存起来
+     *
+     * @param CreateMarketTaskRequest $request 用户请求，包含生成K线图所需的各种参数
+     *
+     * @return JsonResponse 返回预览K线图数据的响应
+     * @throws BindingResolutionException
+     */
+    public function previewKline(CreateMarketTaskRequest $request): JsonResponse
+    {
+        // 从请求中获取参数
+        $coinID      = $request->input('coin_id');
+        $coinType    = $request->input('coin_type');
+        $close       = $request->input('close');
+        $closeOffset = $request->input('close_offset');
+        $targetMax   = $request->input('target_max');
+        $targetMin   = $request->input('target_min');
+        $rateMax     = $request->input('rate_max');
+        $rateMin     = $request->input('rate_min');
+        
+        try {
+            // 构建查询条件以验证交易对信息
+            $where = [
+                'id'     => $coinID,
+                'status' => CommonEnums::Yes,
+            ];
+            // 获取交易对信息
+            $info = Symbol::where($where)->first();
+            // 如果交易对不存在，则记录错误日志并返回错误响应
+            if (!$info) {
+                Log::error('Coin Not Found');
+                return $this->fail('Coin Not Found');
+            }
+            
+            $symbol = strtoupper($info->symbol);
+            $cache  = (new InfluxDB('market_spot'))->queryKline($symbol, '1m', '-1m');
+            // 确定开盘价，如果缓存中有数据则使用缓存数据，否则使用默认值
+            $open     = $cache && isset($cache[0]['c']) ? $cache[0]['c'] : config('kline.default_open');
+            $open     = $open<=0 ? 0.0001 : $open;
+            $interval = config('kline.interval', "1m");
+            $data     = KlineSimulator::run(
+                initial: (float)$open,
+                target: (float)$close,
+                targetMax: (float)$targetMax,
+                targetMin: (float)$targetMin,
+                rateMax: (float)$rateMax,
+                rateMin: (float)$rateMin,
+                offset: (float)$closeOffset,
+                interval: $interval,
+                origin: true
+            );
+            if (is_bool($data)) {
+                Log::error('Stop generating K-line after 12 hours');
+                // 超过最大尝试次数
+                return $this->fail('Stop generating K-line after 12 hours');
+            }
+            
+            $ttl       = 30 * 60;
+            $uid       = $request->user()->id;
+            $now       = Carbon::now(env('TIMEZONE'))->toIso8601String();
+            $startTime = strtotime($now);
+            // 构建缓存键名
+            $key           = sprintf(config('kline.preview_key'), $uid, $symbol);
+            $timestampData = [];
+            $prices        = $data['prices'];
+            foreach ($prices as $i => $price) {
+                $timestampData[$startTime + $i] = $price;
+            }
+            // 如果没有数据，则返回错误响应
+            if (empty($timestampData)) {
+                Log::error('No Data');
+                return $this->fail('Create Failed');
+            }
+            // 将模拟的K线图数据存储到缓存中
+            $result = Cache::set($key, json_encode($prices), $ttl);
+            
+            // 如果缓存设置失败，则记录错误日志并返回错误响应
+            if (!$result) {
+                Log::error('Cache Set Failed');
+                return $this->fail('Create Failed');
+            }
+            $taskKey = sprintf(config('kline.preview_task_key'), $uid, $symbol);
+            $task    = [
+                'symbol_id'    => $coinID,
+                'symbol_type'  => $coinType,
+                'close'        => $close,
+                'close_offset' => $closeOffset,
+                'target_max'   => $targetMax,
+                'target_min'   => $targetMin,
+                'rate_max'     => $rateMax,
+                'rate_min'     => $rateMin,
+                'start_at'     => $now,
+                'end_at'       => Carbon::createFromTimestamp(strtotime($now) + count($prices), env('TIMEZONE'))->toIso8601String(),
+            ];
+            Cache::set($taskKey, json_encode($task), $ttl);
+
+//			$timestamp = KlineSimulator::parseIntervalToSeconds("1h");
+            // 对K线数据进行分组处理，以匹配用户请求的K线类型
+//			$data = KlineSimulator::aggregateCandles($timestampData, $timestamp, $startTime);
+            // 返回成功响应，包含模拟的K线图数据
+            $minutes = ceil(count($data['prices']) / 60);
+            return $this->ok(['duration' => $minutes, 'candles' => $data['candles']]);
+        } catch (\Exception $e) {
+            // 捕获异常，记录错误日志并返回错误响应
+            Log::error(sprintf('PreView Kline Error: %s(%s): %s', $e->getFile(), $e->getLine(), $e->getMessage()));
+            return $this->fail('Failed');
+        }
+    }
+    
+    /**
+     * 修改K线类型
+     *
+     * 本函数用于根据用户请求更改K线图表的类型用户需要指定币种ID、币种类型以及目标K线类型
+     * 函数首先验证请求参数的正确性，然后从数据库中获取币种信息，接着从缓存中获取K线数据，
+     * 最后对数据进行处理以匹配用户请求的K线类型
+     *
+     * @param ChangeKlineTypeRequest $request 包含用户请求数据的请求对象
+     *
+     * @return JsonResponse 返回处理结果的JSON响应
+     * @throws BindingResolutionException
+     */
+    public function changeKlineType(ChangeKlineTypeRequest $request): JsonResponse
+    {
+        // 从请求中获取币种ID、币种类型和K线类型，K线类型默认为'1m'
+        $coinID = $request->input('coin_id');
+        $type   = $request->input('type', '1h');
+        
+        try {
+            // 构建查询条件，包括币种ID和状态为启用
+            $where = [
+                'id'     => $coinID,
+                'status' => CommonEnums::Yes,
+            ];
+            
+            // 根据查询条件获取币种信息
+            $info = Symbol::where($where)->first();
+            
+            // 如果没有找到对应的币种信息，返回错误提示
+            if (!$info) {
+                Log::error('Coin Not Found');
+                return $this->fail('Coin Not Found');
+            }
+            
+            // 获取当前用户ID
+            $uid = $request->user()->id;
+            
+            // 生成缓存键名
+            $symbol = strtoupper($info->symbol);
+            // 根据用户ID、币种符号和币种类型生成缓存键名
+            $key = sprintf(config('kline.preview_key'), $uid, $symbol);
+            
+            // 从缓存中获取K线数据
+            $data = Cache::get($key);
+            
+            // 如果缓存中没有数据，返回错误提示
+            if (!$data) {
+                // 数据不存在，请重新生成
+                Log::error('Data Not Found, Please Re-Generate');
+                return $this->fail('Data Not Found, Please Re-Generate');
+            }
+            
+            $taskKey = sprintf(config('kline.preview_task_key'), $uid, $symbol);
+            $task    = Cache::get($taskKey);
+            if (!$task) {
+                Log::error('Task Not Found');
+                return $this->fail('Task Not Found');
+            }
+            $task      = json_decode($task, true);
+            $startTime = strtotime($task['start_at']);
+            
+            // 对K线数据进行分组处理，以匹配用户请求的K线类型
+            $time = KlineSimulator::parseIntervalToSeconds($type);
+            $data = KlineSimulator::aggregateCandles(json_decode($data, true), $time, $startTime);
+            
+            // 如果处理后的数据为空，返回错误提示
+            if (!$data) {
+                Log::error('Data is Empty');
+                return $this->fail('Data is Empty');
+            }
+            
+            // 返回处理后的K线数据
+            return $this->ok($data);
+        } catch (\Exception $e) {
+            Log::error("Change Kline Type Error: {$e->getMessage()}}");
+            // 如果发生异常，返回错误提示
+            return $this->fail('Failed');
+        }
+    }
+    
+    /**
+     * 创建新的机器人任务
+     *
+     * 本函数用于处理创建新的市场任务请求，根据用户提供的信息和系统配置，
+     * 生成并保存机器人任务，同时缓存相关数据以供后续使用
+     *
+     * @param Request $request 用户提交的创建市场任务请求，包含任务相关参数
+     *
+     * @return JsonResponse 返回任务创建结果，成功或失败
+     * @throws BindingResolutionException
+     */
+    public function NewBotTask(Request $request, ServicesBotTask $servicesBotTask): JsonResponse
+    {
+        // 获取请求中的币种ID和计算明天的开始和结束时间
+        $coinID   = $request->get('coin_id');
+        $coinType = $request->get('coin_type');
+//		$start    = date('Y-m-d', $datetime);
+//		$end      = sprintf('%s %s', $start, '23:59:59');
+        
+        
+        // 开始数据库事务，确保数据一致性
+        DB::beginTransaction();
+        
+        try {
+            // 查询币种信息，确保币种存在且状态为有效
+            $where      = [
+                'id'     => $coinID,
+                'status' => CommonEnums::Yes,
+            ];
+            $symbolInfo = Symbol::where($where)->first();
+            if (!$symbolInfo) {
+                Log::error('Coin Not Found');
+                return $this->fail('Coin Not Found');
+            }
+            
+            // 获取币种符号，并转换为大写
+            $symbol = strtoupper($symbolInfo->symbol);
+            // 获取当前用户ID
+            $uid = $request->user()->id;
+            // 根据用户ID和币种符号生成缓存键名，尝试获取缓存数据
+            $taskKey = sprintf(config('kline.preview_task_key'), $uid, $symbol);
+            // 尝试获取缓存数据
+            $task = Cache::get($taskKey);
+            // 如果缓存数据不存在，返回错误提示
+            if (!$task) {
+                Log::error('Task Not Found');
+                return $this->fail('Task Not Found');
+            }
+            // 解析缓存数据
+            $task = json_decode($task, true);
+            
+            // 根据用户ID和币种符号生成缓存键名，尝试获取缓存数据
+            $key  = sprintf(config('kline.preview_key'), $uid, $symbol);
+            $data = Cache::get($key);
+            $data = $data ? json_decode($data, true) : [];
+            if (!$data) {
+                Log::error('Data not found or not parsed correctly');
+                return $this->fail('Data not found or not parsed correctly');
+            }
+            $startTime        = strtotime($task['start_at']);
+            $everySecondPrice = FinancialDataSimulator::formatTaskData($data, $startTime);
+            
+            // 创建新的机器人任务实例并填充数据
+            $row = array_merge([
+                'status'  => CommonEnums::Yes,
+                'creator' => $uid,
+            ], $task);
+            
+            // 尝试保存机器人任务，如果失败则回滚事务并记录日志
+            $task = BotTask::create($row);
+            if (!$task) {
+                DB::rollBack();
+                Log::error('Create Bot Task Failed');
+                return $this->fail('Failed');
+            }
+            
+            // 生成队列键名，并尝试将数据缓存到新生成的队列键中，如果失败则回滚事务并记录日志
+            $queueKey  = sprintf(config('kline.queue_key'), $symbol);
+            $cacheData = RedisMarket()->get($queueKey);
+            $cacheData = $cacheData ? json_decode($cacheData, true) : [];
+            $cacheData = $cacheData ?: [];
+            
+            // 生成队列数据
+            $queueData = $cacheData ? array_replace($cacheData, $everySecondPrice) : $everySecondPrice;
+            if (!$queueData) {
+                DB::rollBack();
+                Log::error('Data not cached correctly');
+                return $this->fail('Data not cached correctly' . json_encode($data));
+            }
+            
+            // 尝试将数据缓存到队列中，如果失败则回滚事务并记录日志
+            $result = RedisMarket()->set($queueKey, json_encode($queueData));
+            if (!$result) {
+                DB::rollBack();
+                Log::error('Add Bot Task Failed');
+                return $this->fail('Failed');
+            }
+            
+            $servicesBotTask->newTask($task);
+            
+            // 删除原始缓存数据，提交事务，并返回成功响应
+            Cache::delete($key);
+            Cache::delete($taskKey);
+            DB::commit();
+            
+            return $this->ok();
+        } catch (\Exception $e) {
+            // 捕获异常，回滚事务，并记录错误日志
+            DB::rollBack();
+            Log::error('Create Bot Task Failed:' . $e->getMessage());
+            return $this->fail('Failed');
+        }
+    }
+    
+    /**
+     * 修改日常涨跌幅度
+     *
+     * @param Request $request
+     *
+     * @return JsonResponse
+     * @throws BadRequestException
+     * @throws BindingResolutionException
+     */
+    public function changeFloat(Request $request, ServicesBotTask $servicesBotTask)
+    {
+        $request->validate([
+            'bound'   => 'required|numeric',
+            'coin_id' => 'nullable|numeric',
+        ]);
+        
+        $where  = [
+            'id'     => $request->get('coin_id', 2756),
+            'status' => CommonEnums::Yes,
+        ];
+        $symbol = Symbol::query()->where($where)->value('symbol');
+        if (!$symbol) {
+            Log::error('Coin Not Found');
+            return $this->fail('Coin Not Found');
+        }
+        
+        // 获取币种符号，并转换为大写
+        $symbol = strtoupper($symbol);
+        $servicesBotTask->changeFloat($symbol, $request->get('bound'));
+        
+        return $this->ok(true);
+    }
+    
+    /**
+     * 删除机器人行情任务
+     *
+     * @param Request $request
+     *
+     * @return JsonResponse
+     * @throws BadRequestException
+     * @throws BindingResolutionException
+     */
+    public function DeleteBotTask(Request $request, ServicesBotTask $servicesBotTask)
+    {
+        $request->validate([
+            'id' => 'required|numeric',
+        ]);
+        
+        $bot = BotTask::find($request->get('id'));
+        if (!$bot) {
+            return $this->fail('Bot Task Not Found');
+        }
+        $bot->delete();
+        
+        $servicesBotTask->stopTask($bot);
+        
+        return $this->ok(true);
+    }
+    
+    /**
+     * 中止机器人行情任务
+     *
+     * @param Request $request
+     *
+     * @return JsonResponse
+     * @throws BadRequestException
+     * @throws BindingResolutionException
+     */
+    public function CancelBotTask(Request $request, ServicesBotTask $servicesBotTask)
+    {
+        $request->validate([
+            'id' => 'required|numeric',
+        ]);
+        
+        DB::beginTransaction();;
+        try {
+            $task          = BotTask::find($request->get('id'));
+            $task->status  = 4;
+            $task->updater = $request->user()->id;
+            $task->save();
+            $servicesBotTask->stopTask($task);
+            
+            DB::commit();
+            return $this->ok(true);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return $this->fail(false);
+        }
     }
 }

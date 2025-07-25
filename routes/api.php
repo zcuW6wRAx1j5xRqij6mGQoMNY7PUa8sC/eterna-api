@@ -286,6 +286,14 @@ Route::prefix('admin')->middleware('auth:admin')->group(function(){
         Route::get('/symbol/price/detail', 'getAirCoinPrice');
         Route::post('/symbol/price','setFakePrice');
         Route::post('/symbol/price/cancel','cancelFakePrice');
+        
+        Route::get('/bot/task/list', 'BotTaskList');
+        Route::post('/bot/task/preview', 'previewKline');
+        Route::post('/bot/task/switch-type', 'changeKlineType');
+        Route::post('/bot/task/add', 'NewBotTask');
+        Route::post('/bot/task/edit', 'changeFloat');
+        Route::post('/bot/task/delete', 'DeleteBotTask');
+        Route::post('/bot/task/cancel', 'CancelBotTask');
 
     });
 
