@@ -39,7 +39,7 @@ if (!function_exists('listResp')) {
      * @param bool $camleConvert
      * @return array
      */
-    function listResp(Illuminate\Contracts\Pagination\LengthAwarePaginator|null $paginator, callable $callback = null, bool $camleConvert = false)
+    function listResp(Illuminate\Contracts\Pagination\LengthAwarePaginator|null $paginator, ?callable $callback = null, bool $camleConvert = false)
     {
         if ($paginator === null) {
             $baseInfo = [
