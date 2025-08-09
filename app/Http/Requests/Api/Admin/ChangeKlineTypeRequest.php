@@ -23,7 +23,7 @@ class ChangeKlineTypeRequest extends FormRequest {
 		return [
 			'coin_id'   => 'required|exists:symbols,id',
 			'coin_type' => 'bail|required|in:spot,futures',
-			'type'      => 'required|in:1m,5m,15m,30m,1h',
+			'type'      => 'required|in:1m,5m,15m,30m,1h,1d',
 		];
 	}
 }

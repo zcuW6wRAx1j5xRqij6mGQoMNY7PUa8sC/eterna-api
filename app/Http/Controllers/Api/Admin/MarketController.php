@@ -7,6 +7,7 @@ use App\Enums\AdminLogTypeEnums;
 use App\Enums\CommonEnums;
 use App\Enums\SymbolEnums;
 use App\Exceptions\LogicException;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
 use Internal\Market\Services\InfluxDB;
@@ -20,6 +21,8 @@ use App\Models\SymbolSpot;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use App\Internal\Tools\Services\KlineSimulator;
+use App\Internal\Tools\Services\GbmPathService;
+use App\Internal\Tools\Services\KlineAggregatorService;
 use App\Internal\Tools\Services\BotTask as ServicesBotTask;
 use App\Http\Requests\Api\Admin\ChangeKlineTypeRequest;
 use App\Internal\Tools\Services\FinancialDataSimulator;
@@ -35,18 +38,19 @@ use Symfony\Component\HttpFoundation\Exception\BadRequestException;
 use InvalidArgumentException;
 
 /** @package App\Http\Controllers\Api\Admin */
-class MarketController extends ApiController
-{
-
+class MarketController extends ApiController {
+    
     public function coins(Request $request)
     {
         $data = SymbolCoin::query()->orderBy('sort')->get();
         return $this->ok($data);
     }
-
+    
     /**
      * 简单symbol 数据, 仅限后台筛选使用
+     *
      * @param Request $request
+     *
      * @return JsonResponse
      * @throws BindingResolutionException
      */
@@ -55,25 +59,31 @@ class MarketController extends ApiController
         $data = Symbol::select(['id', 'name', 'symbol', 'binance_symbol'])->where('quote_asset', 'usdt')->where('status', CommonEnums::Yes)->get();
         return $this->ok($data);
     }
-
+    
     /**
      * 简单合约列表 - 用于后台查询
+     *
      * @param Request $request
+     *
      * @return JsonResponse
      * @throws InvalidArgumentException
      * @throws BindingResolutionException
      */
     public function simpleFutures(Request $request)
     {
-        $futures = SymbolFutures::with(['symbol' => function ($query) {
-            $query->select(['id', 'name', 'symbol']);
-        }])->select(['id', 'symbol_id'])->where('status', CommonEnums::Yes)->get();
+        $futures = SymbolFutures::with([
+            'symbol' => function ($query) {
+                $query->select(['id', 'name', 'symbol']);
+            },
+        ])->select(['id', 'symbol_id'])->where('status', CommonEnums::Yes)->get();
         return $this->ok($futures);
     }
-
+    
     /**
      * 交易对列表
+     *
      * @param Request $request
+     *
      * @return JsonResponse
      * @throws BadRequestException
      * @throws InvalidArgumentException
@@ -82,37 +92,37 @@ class MarketController extends ApiController
     public function symbols(Request $request)
     {
         $request->validate([
-            'page' => 'numeric',
+            'page'      => 'numeric',
             'page_size' => 'numeric',
-            'status' => ['nullable', Rule::in([CommonEnums::Yes, CommonEnums::No])],
-            'name' => 'nullable|string',
+            'status'    => ['nullable', Rule::in([CommonEnums::Yes, CommonEnums::No])],
+            'name'      => 'nullable|string',
         ]);
-
+        
         $status = $request->get('status', null);
-        $name = $request->get('name', '');
-        $query = Symbol::query();
+        $name   = $request->get('name', '');
+        $query  = Symbol::query();
         if ($status !== null) {
             $query->where('status', $status);
         }
         if ($name) {
             $query->where('name', 'like', '%' . $name . '%');
         }
-
+        
         $data = $query->orderBy('created_at')->paginate($request->get('page_size'), ['*'], null, $request->get('page'));
         return $this->ok(listResp($data));
     }
-
+    
     public function fakePrice(Request $request)
     {
         $request->validate([
             'symbol_type' => ['nullable', Rule::in([SymbolEnums::SymbolTypeFutures, SymbolEnums::SymbolTypeSpot])],
-            'symbol'=>'nullable|string',
+            'symbol'      => 'nullable|string',
         ]);
-
+        
         $st = $request->get('symbol_type');
-
+        
         $symbol = $request->get('symbol', '');
-        $query = PlatformSymbolPrice::with(['symbol']);
+        $query  = PlatformSymbolPrice::with(['symbol']);
         if ($st) {
             $query->where('symbol_type', $st);
         }
@@ -121,20 +131,20 @@ class MarketController extends ApiController
                 $query->where('symbol', 'like', '%' . $symbol . '%');
             });
         }
-
+        
         $data = $query->get();
         if ($data->isEmpty()) {
             return $this->ok([]);
         }
         return $this->ok($data);
     }
-
+    
     public function cancelFakePrice(Request $request, SetFakePrice $setFakePrice)
     {
         $request->validate([
             'id' => 'required|numeric',
         ]);
-        $id = $request->get('id');
+        $id  = $request->get('id');
         $cfg = PlatformSymbolPrice::find($id);
         if (!$cfg) {
             throw new LogicException('数据不正确');
@@ -145,55 +155,57 @@ class MarketController extends ApiController
         $setFakePrice->handleCancel($cfg->id);
         return $this->ok(true);
     }
-
+    
     /**
-     * @param Request $request 
-     * @return JsonResponse 
-     * @throws BadRequestException 
-     * @throws InvalidArgumentException 
-     * @throws LogicException 
-     * @throws BindingResolutionException 
+     * @param Request $request
+     *
+     * @return JsonResponse
+     * @throws BadRequestException
+     * @throws InvalidArgumentException
+     * @throws LogicException
+     * @throws BindingResolutionException
      */
-    public function getAirCoinPrice(Request $request) {
+    public function getAirCoinPrice(Request $request)
+    {
         $request->validate([
-            'id'=>'required|numeric',
+            'id' => 'required|numeric',
         ]);
-
+        
         $air = PlatformSymbolPrice::with('symbol')->where('id', $request->get('id'))->first();
         if (!$air) {
             throw new LogicException('数据不正确');
         }
-
+        
         $price = 0;
         if ($air->symbol_type == SymbolEnums::SymbolTypeSpot) {
-            $price= (new FetchSymbolQuote)($air->symbol->symbol);
+            $price = (new FetchSymbolQuote)($air->symbol->symbol);
         } else {
             $price = (new FetchSymbolFuturesQuote)($air->symbol->symbol);
         }
         return $this->ok($price);
     }
-
+    
     public function setFakePrice(Request $request)
     {
         $request->validate([
-            'id' => 'required|numeric',
+            'id'         => 'required|numeric',
             'start_time' => 'required|numeric',
             // 'duration_time' => 'required|numeric',
-            'price' => 'required|numeric',
+            'price'      => 'required|numeric',
         ]);
-
+        
         DB::transaction(function () use ($request) {
-            $id = $request->get('id');
-            $price = $request->get('price');
-            $now = Carbon::now();
+            $id        = $request->get('id');
+            $price     = $request->get('price');
+            $now       = Carbon::now();
             $startTime = $request->get('start_time');
             if ($startTime <= 0) {
                 throw new LogicException('开始时间必须大于当前时间');
             }
             $startTime = intval($startTime);
-
+            
             $before = 0;
-            $cfg = PlatformSymbolPrice::with('symbol')->where('id',$id)->first();
+            $cfg    = PlatformSymbolPrice::with('symbol')->where('id', $id)->first();
             if (!$cfg) {
                 throw new LogicException('数据不正确');
             }
@@ -202,41 +214,43 @@ class MarketController extends ApiController
             }
             // $cfg->duration_time = $request->get('duration_time');
             $cfg->duration_time = 1000;
-            $cfg->start_time = $now->addMinutes($startTime)->toDateTimeString();
-            $cfg->status = CommonEnums::Yes;
-            $cfg->task_id = generateUuid();
-
-            $before = $cfg->fake_price;
+            $cfg->start_time    = $now->addMinutes($startTime)->toDateTimeString();
+            $cfg->status        = CommonEnums::Yes;
+            $cfg->task_id       = generateUuid();
+            
+            $before          = $cfg->fake_price;
             $cfg->fake_price = $price;
             $cfg->save();
-
-            $log = new AdminUserLog();
+            
+            $log           = new AdminUserLog();
             $log->admin_id = $request->user()->id;
             $log->log_type = AdminLogTypeEnums::LogTypeSettingFake;
-            $log->content = [
-                'id'=>$cfg->id,
-                'before' => $before,
+            $log->content  = [
+                'id'      => $cfg->id,
+                'before'  => $before,
                 'setting' => $price,
             ];
-            $log->ip = $request->ip();
+            $log->ip       = $request->ip();
             $log->save();
-
+            
             (new SetFakePrice)($cfg, $startTime);
-
+            
             $jobStart = Carbon::now()->addMinutes($startTime);
             // $jobStopTime = $jobStart->copy()->addMinutes($cfg->duration_time + 2);
             // StopFakePrice::dispatch($cfg)->delay($jobStopTime);
-
+            
             // $jobStart = Carbon::now()->addSeconds($startTime->diffInSeconds($now));
             // StartFakePrice::dispatch($cfg)->delay($jobStart);
             return true;
         });
         return $this->ok(true);
     }
-
+    
     /**
      * 修改交易对信息
+     *
      * @param Request $request
+     *
      * @return JsonResponse
      * @throws BadRequestException
      * @throws BindingResolutionException
@@ -244,23 +258,25 @@ class MarketController extends ApiController
     public function modifySymbols(Request $request)
     {
         $request->validate([
-            'id' => 'required|numeric',
+            'id'     => 'required|numeric',
             'status' => ['nullable', Rule::in([CommonEnums::Yes, CommonEnums::No])],
         ]);
-
+        
         $status = $request->get('status', null);
         $symbol = Symbol::findOrFail($request->get('id'));
-
+        
         if ($status !== null) {
             $symbol->status = $status;
         }
         $symbol->save();
         return $this->ok(true);
     }
-
+    
     /**
      * 现货交易对
+     *
      * @param Request $request
+     *
      * @return JsonResponse
      * @throws BadRequestException
      * @throws InvalidArgumentException
@@ -269,18 +285,18 @@ class MarketController extends ApiController
     public function spotSymbols(Request $request)
     {
         $request->validate([
-            'page' => 'numeric',
-            'page_size' => 'numeric',
-            'status' => ['nullable', Rule::in([CommonEnums::Yes, CommonEnums::No])],
-            'keyword' => 'nullable|string',
+            'page'         => 'numeric',
+            'page_size'    => 'numeric',
+            'status'       => ['nullable', Rule::in([CommonEnums::Yes, CommonEnums::No])],
+            'keyword'      => 'nullable|string',
             'is_recommend' => ['nullable', Rule::in([CommonEnums::Yes, CommonEnums::No])],
         ]);
-
-
-        $status = $request->get('status', null);
-        $keyword = $request->get('keyword', '');
+        
+        
+        $status      = $request->get('status', null);
+        $keyword     = $request->get('keyword', '');
         $isRecommend = $request->get('is_recommend', null);
-
+        
         $query = SymbolSpot::with('symbol');
         if ($status !== null) {
             $query->where('status', $status);
@@ -295,14 +311,16 @@ class MarketController extends ApiController
         if ($isRecommend !== null) {
             $query->where('is_recommend', $isRecommend);
         }
-
+        
         $data = $query->orderBy('sort')->paginate($request->get('page_size'), ['*'], null, $request->get('page'));
         return $this->ok(listResp($data));
     }
-
+    
     /**
      * 修改现货交易对
+     *
      * @param Request $request
+     *
      * @return JsonResponse
      * @throws BadRequestException
      * @throws BindingResolutionException
@@ -310,32 +328,34 @@ class MarketController extends ApiController
     public function modifySpotSymbol(Request $request)
     {
         $request->validate([
-            'id' => 'numeric',
-            'coin_id' => 'required|numeric',
-            'status' => ['required', Rule::in([CommonEnums::Yes, CommonEnums::No])],
+            'id'           => 'numeric',
+            'coin_id'      => 'required|numeric',
+            'status'       => ['required', Rule::in([CommonEnums::Yes, CommonEnums::No])],
             'is_recommend' => ['required', Rule::in([CommonEnums::Yes, CommonEnums::No])],
-            'sort' => 'required|numeric',
-            'symbol_id' => 'required|numeric',
-            'buy_spread' => 'numeric',
-            'sell_spread' => 'numeric',
+            'sort'         => 'required|numeric',
+            'symbol_id'    => 'required|numeric',
+            'buy_spread'   => 'numeric',
+            'sell_spread'  => 'numeric',
         ]);
-        $id = $request->get('id', 0);
-        $coinId = $request->get('coin_id');
-        $model = $id ? SymbolSpot::findOrFail($id) : new SymbolSpot();
-        $model->status = $request->get('status');
+        $id                  = $request->get('id', 0);
+        $coinId              = $request->get('coin_id');
+        $model               = $id ? SymbolSpot::findOrFail($id) : new SymbolSpot();
+        $model->status       = $request->get('status');
         $model->is_recommend = $request->get('is_recommend');
-        $model->coin_id = $coinId;
-        $model->sort = $request->get('sort');
-        $model->symbol_id = $request->get('symbol_id');
-        $model->buy_spread = $request->get('buy_spread', 0);
-        $model->sell_spread = $request->get('sell_spread', 0);
+        $model->coin_id      = $coinId;
+        $model->sort         = $request->get('sort');
+        $model->symbol_id    = $request->get('symbol_id');
+        $model->buy_spread   = $request->get('buy_spread', 0);
+        $model->sell_spread  = $request->get('sell_spread', 0);
         $model->save();
         return $this->ok(true);
     }
-
+    
     /**
      * 合约交易对列表
+     *
      * @param Request $request
+     *
      * @return JsonResponse
      * @throws BadRequestException
      * @throws InvalidArgumentException
@@ -344,16 +364,16 @@ class MarketController extends ApiController
     public function DerivativeSymbols(Request $request)
     {
         $request->validate([
-            'page' => 'numeric',
+            'page'      => 'numeric',
             'page_size' => 'numeric',
-            'status' => ['nullable', Rule::in([CommonEnums::Yes, CommonEnums::No])],
-            'keyword' => 'nullable|string',
+            'status'    => ['nullable', Rule::in([CommonEnums::Yes, CommonEnums::No])],
+            'keyword'   => 'nullable|string',
         ]);
-
-
-        $status = $request->get('status', null);
+        
+        
+        $status  = $request->get('status', null);
         $keyword = $request->get('keyword', '');
-
+        
         $query = SymbolFutures::with('symbol');
         if ($status !== null) {
             $query->where('status', $status);
@@ -365,15 +385,17 @@ class MarketController extends ApiController
             }
             $query->whereIn('symbol_id', $s->pluck('id')->toArray());
         }
-
-
+        
+        
         $data = $query->orderBy('sort')->paginate($request->get('page_size'), ['*'], null, $request->get('page'));
         return $this->ok(listResp($data));
     }
-
+    
     /**
      * 修改合约交易对
+     *
      * @param Request $request
+     *
      * @return JsonResponse
      * @throws BadRequestException
      * @throws BindingResolutionException
@@ -381,19 +403,19 @@ class MarketController extends ApiController
     public function modifyDervativeSymbol(Request $request)
     {
         $request->validate([
-            'id' => 'numeric',
-            'status' => ['required', Rule::in([CommonEnums::Yes, CommonEnums::No])],
-            'sort' => 'required|numeric',
-            'symbol_id' => 'required|numeric',
-            'buy_spread' => 'numeric',
+            'id'          => 'numeric',
+            'status'      => ['required', Rule::in([CommonEnums::Yes, CommonEnums::No])],
+            'sort'        => 'required|numeric',
+            'symbol_id'   => 'required|numeric',
+            'buy_spread'  => 'numeric',
             'sell_spread' => 'numeric',
         ]);
-        $id = $request->get('id', 0);
-        $model = $id ? SymbolFutures::findOrFail($id) : new SymbolFutures();
-        $model->status = $request->get('status');
-        $model->sort = $request->get('sort');
-        $model->symbol_id = $request->get('symbol_id');
-        $model->buy_spread = $request->get('buy_spread', 0);
+        $id                 = $request->get('id', 0);
+        $model              = $id ? SymbolFutures::findOrFail($id) : new SymbolFutures();
+        $model->status      = $request->get('status');
+        $model->sort        = $request->get('sort');
+        $model->symbol_id   = $request->get('symbol_id');
+        $model->buy_spread  = $request->get('buy_spread', 0);
         $model->sell_spread = $request->get('sell_spread', 0);
         $model->save();
         return $this->ok(true);
@@ -415,13 +437,13 @@ class MarketController extends ApiController
         
         $data = $query->orderBy('start_at')->paginate($request->get('page_size'), ['*'], null, $request->get('page'));
         $data = listResp($data);
-        foreach ($data['items'] as &$item){
-            if($item['status'] == CommonEnums::Yes && Carbon::now()->isAfter(Carbon::parse($item['end_at']))){
+        foreach ($data['items'] as &$item) {
+            if ($item['status'] == CommonEnums::Yes && Carbon::now()->isAfter(Carbon::parse($item['end_at']))) {
                 $item['status'] = 3;
             }
             
             $item['start_at'] = date('Y-m-d H:i:s', strtotime('+8 hour', strtotime($item['start_at'])));
-            $item['end_at'] = date('Y-m-d H:i:s', strtotime('+8 hour', strtotime($item['end_at'])));
+            $item['end_at']   = date('Y-m-d H:i:s', strtotime('+8 hour', strtotime($item['end_at'])));
         }
         
         return $this->ok($data);
@@ -441,14 +463,14 @@ class MarketController extends ApiController
     public function previewKline(CreateMarketTaskRequest $request): JsonResponse
     {
         // 从请求中获取参数
-        $coinID      = $request->input('coin_id');
-        $coinType    = $request->input('coin_type');
-        $close       = $request->input('close');
-        $closeOffset = $request->input('close_offset');
-        $targetMax   = $request->input('target_max');
-        $targetMin   = $request->input('target_min');
-        $rateMax     = $request->input('rate_max');
-        $rateMin     = $request->input('rate_min');
+        $coinID     = $request->input('coin_id');
+        $coinType   = $request->input('coin_type');
+        $open       = $request->input('open', 0);
+        $targetHigh = $request->input('high');
+        $targetLow  = $request->input('low');
+        $close      = $request->input('close');
+        $startTime  = $request->input('start_time');
+        $endTime    = $request->input('end_time');
         
         try {
             // 构建查询条件以验证交易对信息
@@ -461,50 +483,32 @@ class MarketController extends ApiController
             // 如果交易对不存在，则记录错误日志并返回错误响应
             if (!$info) {
                 Log::error('Coin Not Found');
-                return $this->fail('Coin Not Found');
+                return $this->fail(__('Coin Not Found'));
             }
             
             $symbol = strtoupper($info->symbol);
-            $cache  = (new InfluxDB('market_spot'))->queryKline($symbol, '1m', '-1m');
-            // 确定开盘价，如果缓存中有数据则使用缓存数据，否则使用默认值
-            $open     = $cache && isset($cache[0]['c']) ? $cache[0]['c'] : config('kline.default_open');
-            $open     = $open<=0 ? 0.0001 : $open;
-            $interval = config('kline.interval', "1m");
-            $data     = KlineSimulator::run(
-                initial: (float)$open,
-                target: (float)$close,
-                targetMax: (float)$targetMax,
-                targetMin: (float)$targetMin,
-                rateMax: (float)$rateMax,
-                rateMin: (float)$rateMin,
-                offset: (float)$closeOffset,
-                interval: $interval,
-                origin: true
-            );
-            if (is_bool($data)) {
-                Log::error('Stop generating K-line after 12 hours');
-                // 超过最大尝试次数
-                return $this->fail('Stop generating K-line after 12 hours');
-            }
             
-            $ttl       = 30 * 60;
-            $uid       = $request->user()->id;
-            $now       = Carbon::now(env('TIMEZONE'))->toIso8601String();
-            $startTime = strtotime($now);
+            // 确定开盘价，如果缓存中有数据则使用缓存数据，否则使用默认值
+//            $cache  = (new InfluxDB('market_spot'))->queryKline($symbol, '1m', '-1m');
+//            $open = $cache && isset($cache[0]['c']) ? $cache[0]['c'] : config('kline.default_open');
+            
+            $open = $open <= 0 ? 0.0001 : $open;
+            $data = GbmPathService::generateCandles(
+                $open,
+                $close,
+                $startTime,
+                $endTime,
+                $targetHigh,
+                $targetLow,
+                1,
+            );
+            
+            $ttl = 30 * 60;
+            $uid = $request->user()->id;
             // 构建缓存键名
-            $key           = sprintf(config('kline.preview_key'), $uid, $symbol);
-            $timestampData = [];
-            $prices        = $data['prices'];
-            foreach ($prices as $i => $price) {
-                $timestampData[$startTime + $i] = $price;
-            }
-            // 如果没有数据，则返回错误响应
-            if (empty($timestampData)) {
-                Log::error('No Data');
-                return $this->fail('Create Failed');
-            }
+            $key = sprintf(config('kline.preview_key'), $uid, $symbol);
             // 将模拟的K线图数据存储到缓存中
-            $result = Cache::set($key, json_encode($prices), $ttl);
+            $result = Cache::set($key, json_encode($data), $ttl);
             
             // 如果缓存设置失败，则记录错误日志并返回错误响应
             if (!$result) {
@@ -513,25 +517,23 @@ class MarketController extends ApiController
             }
             $taskKey = sprintf(config('kline.preview_task_key'), $uid, $symbol);
             $task    = [
-                'symbol_id'    => $coinID,
-                'symbol_type'  => $coinType,
-                'close'        => $close,
-                'close_offset' => $closeOffset,
-                'target_max'   => $targetMax,
-                'target_min'   => $targetMin,
-                'rate_max'     => $rateMax,
-                'rate_min'     => $rateMin,
-                'start_at'     => $now,
-                'end_at'       => Carbon::createFromTimestamp(strtotime($now) + count($prices), env('TIMEZONE'))->toIso8601String(),
+                'symbol_id'   => $coinID,
+                'symbol_type' => $coinType,
+                'open'        => $open,
+                'high'        => $targetHigh,
+                'low'         => $targetLow,
+                'close'       => $close,
+                'sigma'       => 0.02,
+                'start_at'    => Carbon::parseFromLocale($startTime)->toIso8601String(),
+                'end_at'      => Carbon::parseFromLocale($endTime)->toIso8601String(),
             ];
             Cache::set($taskKey, json_encode($task), $ttl);
-
-//			$timestamp = KlineSimulator::parseIntervalToSeconds("1h");
-            // 对K线数据进行分组处理，以匹配用户请求的K线类型
-//			$data = KlineSimulator::aggregateCandles($timestampData, $timestamp, $startTime);
+            $interval = config('kline.interval', "1m");
+            $candles  = KlineAggregatorService::aggregate($data, [$interval]);
             // 返回成功响应，包含模拟的K线图数据
-            $minutes = ceil(count($data['prices']) / 60);
-            return $this->ok(['duration' => $minutes, 'candles' => $data['candles']]);
+            $candles = $candles[$interval];
+            $minutes = count($candles);
+            return $this->ok(['duration' => $minutes, 'candles' => $candles]);
         } catch (\Exception $e) {
             // 捕获异常，记录错误日志并返回错误响应
             Log::error(sprintf('PreView Kline Error: %s(%s): %s', $e->getFile(), $e->getLine(), $e->getMessage()));
@@ -554,8 +556,8 @@ class MarketController extends ApiController
     public function changeKlineType(ChangeKlineTypeRequest $request): JsonResponse
     {
         // 从请求中获取币种ID、币种类型和K线类型，K线类型默认为'1m'
-        $coinID = $request->input('coin_id');
-        $type   = $request->input('type', '1h');
+        $coinID   = $request->input('coin_id');
+        $interval = $request->input('type', '1m');
         
         try {
             // 构建查询条件，包括币种ID和状态为启用
@@ -591,27 +593,17 @@ class MarketController extends ApiController
                 return $this->fail('Data Not Found, Please Re-Generate');
             }
             
-            $taskKey = sprintf(config('kline.preview_task_key'), $uid, $symbol);
-            $task    = Cache::get($taskKey);
-            if (!$task) {
-                Log::error('Task Not Found');
-                return $this->fail('Task Not Found');
-            }
-            $task      = json_decode($task, true);
-            $startTime = strtotime($task['start_at']);
-            
-            // 对K线数据进行分组处理，以匹配用户请求的K线类型
-            $time = KlineSimulator::parseIntervalToSeconds($type);
-            $data = KlineSimulator::aggregateCandles(json_decode($data, true), $time, $startTime);
+            $candles = KlineAggregatorService::aggregate(json_decode($data, true), [$interval]);
             
             // 如果处理后的数据为空，返回错误提示
-            if (!$data) {
+            if (!$candles) {
                 Log::error('Data is Empty');
                 return $this->fail('Data is Empty');
             }
             
-            // 返回处理后的K线数据
-            return $this->ok($data);
+            // 返回成功响应，包含模拟的K线图数据
+            $candles = $candles[$interval];
+            return $this->ok($candles);
         } catch (\Exception $e) {
             Log::error("Change Kline Type Error: {$e->getMessage()}}");
             // 如果发生异常，返回错误提示
@@ -633,11 +625,7 @@ class MarketController extends ApiController
     public function NewBotTask(Request $request, ServicesBotTask $servicesBotTask): JsonResponse
     {
         // 获取请求中的币种ID和计算明天的开始和结束时间
-        $coinID   = $request->get('coin_id');
-        $coinType = $request->get('coin_type');
-//		$start    = date('Y-m-d', $datetime);
-//		$end      = sprintf('%s %s', $start, '23:59:59');
-        
+        $coinID = $request->get('coin_id');
         
         // 开始数据库事务，确保数据一致性
         DB::beginTransaction();
@@ -678,8 +666,15 @@ class MarketController extends ApiController
                 Log::error('Data not found or not parsed correctly');
                 return $this->fail('Data not found or not parsed correctly');
             }
-            $startTime        = strtotime($task['start_at']);
-            $everySecondPrice = FinancialDataSimulator::formatTaskData($data, $startTime);
+            $everySecondPrice = [];
+            foreach ($data as $item) {
+                $everySecondPrice[$item['timestamp'] / 1000] = $item['close'];
+            }
+            // 如果没有数据，则返回错误响应
+            if (empty($everySecondPrice)) {
+                Log::error('No Data');
+                return $this->fail('Create Failed');
+            }
             
             // 创建新的机器人任务实例并填充数据
             $row = array_merge([
