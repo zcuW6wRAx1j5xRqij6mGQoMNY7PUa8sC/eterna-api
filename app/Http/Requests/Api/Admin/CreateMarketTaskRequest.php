@@ -30,8 +30,8 @@ class CreateMarketTaskRequest extends FormRequest {
             'close'      => 'required|decimal:0,5',
             'high'       => 'required|decimal:0,5',
             'low'        => 'required|decimal:0,5',
-            'start_time' => 'required|date_format:Y-m-d H:i',
-            'end_time'   => 'required|date_format:Y-m-d H:i',
+            'start_time' => 'required',
+            'end_time'   => 'required',
         ];
     }
 }

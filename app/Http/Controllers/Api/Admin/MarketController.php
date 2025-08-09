@@ -471,7 +471,7 @@ class MarketController extends ApiController {
         $close      = $request->input('close');
         $startTime  = $request->input('start_time');
         $endTime    = $request->input('end_time');
-        
+
         try {
             // 构建查询条件以验证交易对信息
             $where = [
@@ -524,8 +524,8 @@ class MarketController extends ApiController {
                 'low'         => $targetLow,
                 'close'       => $close,
                 'sigma'       => 0.02,
-                'start_at'    => Carbon::createFromTimeString($startTime)->toDateTimeString(),
-                'end_at'      => Carbon::createFromTimeString($endTime)->toDateTimeString(),
+                'start_at'    => Carbon::parseFromLocale($startTime)->toDateTimeString(),
+                'end_at'      => Carbon::parseFromLocale($endTime)->toDateTimeString(),
             ];
             Cache::set($taskKey, json_encode($task), $ttl);
             $interval = config('kline.interval', "1m");
