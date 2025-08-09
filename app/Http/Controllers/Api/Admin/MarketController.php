@@ -435,7 +435,7 @@ class MarketController extends ApiController {
             $query->where('status', $status);
         }
         
-        $data = $query->orderBy('start_at')->paginate($request->get('page_size'), ['*'], null, $request->get('page'));
+        $data = $query->orderByDesc('id')->paginate($request->get('page_size'), ['*'], null, $request->get('page'));
         $data = listResp($data);
         foreach ($data['items'] as &$item) {
             if ($item['status'] == CommonEnums::Yes && Carbon::now()->isAfter(Carbon::parse($item['end_at']))) {
