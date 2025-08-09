@@ -524,8 +524,8 @@ class MarketController extends ApiController {
                 'low'         => $targetLow,
                 'close'       => $close,
                 'sigma'       => 0.02,
-                'start_at'    => Carbon::parse($startTime)->setTimezone(config('app.timezone')),
-                'end_at'      => Carbon::parse($endTime)->setTimezone(config('app.timezone')),
+                'start_at'    => Carbon::createFromTimeString($startTime)->toDateTimeString(),
+                'end_at'      => Carbon::createFromTimeString($endTime)->toDateTimeString(),
             ];
             Cache::set($taskKey, json_encode($task), $ttl);
             $interval = config('kline.interval', "1m");
