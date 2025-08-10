@@ -716,7 +716,6 @@ class MarketController extends ApiController {
             
             // 删除原始缓存数据，提交事务，并返回成功响应
             Cache::delete($key);
-            µ
             Cache::delete($taskKey);
             DB::commit();
             
