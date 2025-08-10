@@ -23,8 +23,10 @@ final class GbmPathService {
      * @param float                    $targetHigh      目标最高价
      * @param float                    $targetLow       目标最低价
      * @param int                      $intervalSeconds 每根K线的时间间隔（秒），默认为1秒钟
+     * @param ?string                  $timezone        时间时区，默认为 Europe/Berlin
      * @param float                    $sigma           波动率参数，用于控制价格波动幅度，默认为0.02
      * @param ?int                     $scale           小数位数，默认为5
+     *
      *
      * @return array 返回一个包含K线数据的数组，每根K线包含 open, high, low, close, volume, time 字段
      */
@@ -36,20 +38,16 @@ final class GbmPathService {
         float                    $targetHigh,
         float                    $targetLow,
         int                      $intervalSeconds = 1,
+        ?string                  $timezone = 'Europe/Berlin',
         float                    $sigma = 0.001,
         ?int                     $scale = 5,
     ): array
     {
         try {
             // 解析开始和结束时间
-            $start = $startTime instanceof DateTimeInterface
-                ? CarbonImmutable::instance($startTime)
-                : CarbonImmutable::parse($startTime);
+            $start = Carbon::parse($startTime, $timezone);
             
-            $end = $endTime instanceof DateTimeInterface
-                ? CarbonImmutable::instance($endTime)
-                : CarbonImmutable::parse($endTime);
-            
+            $end = Carbon::parse($endTime, $timezone);
             // 计算总分钟数和总步数
             $totalMinutes = max(0, $end->diffInSeconds($start));
             $steps        = max(3, intdiv(max(1, $totalMinutes), max(1, $intervalSeconds)));
@@ -61,7 +59,7 @@ final class GbmPathService {
             
             // 构造价格序列：起始价 + 三段GBM路径
             $prices = [$startOpen];
-            
+
 //            $lo = min($targetLow,  $startOpen, $endClose);
 //            $hi = max($targetHigh, $startOpen, $endClose);
 //
@@ -141,13 +139,16 @@ final class GbmPathService {
         float $high,
         float $sigma = 0.02,   // 噪声强度（区间内的“抖动”）
         float $kappa = 3.0     // 回复强度（越大越贴近目标与中线，波动更温和）
-    ): array {
-        $eps  = 1e-6;
-        if ($low > $high) { [$low, $high] = [$high, $low]; }
-        $w    = max($high - $low, $eps);
+    ): array
+    {
+        $eps = 1e-6;
+        if ($low > $high) {
+            [$low, $high] = [$high, $low];
+        }
+        $w = max($high - $low, $eps);
         
         // 规范化到 (0,1)，再做 logit
-        $toX  = function(float $p) use ($low, $w, $eps): float {
+        $toX   = function (float $p) use ($low, $w, $eps): float {
             return min(max(($p - $low) / $w, $eps), 1.0 - $eps);
         };
         $logit = fn(float $x): float => log($x / (1.0 - $x));
@@ -173,13 +174,17 @@ final class GbmPathService {
             
             // 桥形波动：中间大、两端小；步数越多，每步噪声越小
             $bridgeShape = max(1e-6, sqrt($t * (1.0 - $t)));
-            $z = $zMean + $sigma * sqrt($dt) * $bridgeShape * self::randn();
+            $z           = $zMean + $sigma * sqrt($dt) * $bridgeShape * self::randn();
             
             // 映射回价格并做稳妥裁剪
             $x = $sigm($z);
             $p = $low + $w * $x;
-            if ($p <= $low)  $p = $low  + 1e-6;
-            if ($p >= $high) $p = $high - 1e-6;
+            if ($p <= $low) {
+                $p = $low + 1e-6;
+            }
+            if ($p >= $high) {
+                $p = $high - 1e-6;
+            }
             
             $path[] = $p;
         }

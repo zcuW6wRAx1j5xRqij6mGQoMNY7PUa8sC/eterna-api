@@ -471,7 +471,9 @@ class MarketController extends ApiController {
         $close      = $request->input('close');
         $startTime  = $request->input('start_time');
         $endTime    = $request->input('end_time');
-        
+        $lang       = $request->header('accept-language', 'zh-cn');
+        $lang       = strtolower(mb_substr($lang, 0, 5)) == 'zh-cn';
+        $timezone   = $lang ? 'Asia/Shanghai' : config('app.timezone');
         
         try {
             // 构建查询条件以验证交易对信息
@@ -502,6 +504,7 @@ class MarketController extends ApiController {
                 $targetHigh,
                 $targetLow,
                 1,
+                $timezone
             );
             
             $ttl = 30 * 60;
@@ -524,9 +527,9 @@ class MarketController extends ApiController {
                 'high'        => $targetHigh,
                 'low'         => $targetLow,
                 'close'       => $close,
-                'sigma'       => 0.02,
-                'start_at'    => Carbon::createFromFormat('Y-m-d H:i:s', $startTime, config('app.timezone'))->setTimezone('UTC')->toDateTimeString(),
-                'end_at'      => Carbon::createFromFormat('Y-m-d H:i:s', $endTime, config('app.timezone'))->setTimezone('UTC')->toDateTimeString(),
+                'sigma'       => 0.001,
+                'start_at'    => Carbon::parse($startTime, $timezone)->setTimezone('UTC')->toDateTimeString(),
+                'end_at'      => Carbon::parse($endTime, $timezone)->setTimezone('UTC')->toDateTimeString(),
             ];
             
             Cache::set($taskKey, json_encode($task), $ttl);
