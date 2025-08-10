@@ -472,6 +472,7 @@ class MarketController extends ApiController {
         $startTime  = $request->input('start_time');
         $endTime    = $request->input('end_time');
         
+        
         try {
             // 构建查询条件以验证交易对信息
             $where = [
@@ -524,8 +525,8 @@ class MarketController extends ApiController {
                 'low'         => $targetLow,
                 'close'       => $close,
                 'sigma'       => 0.02,
-                'start_at'    => Carbon::createFromFormat('Y-m-d H:i:s', $startTime, config('app.timezone'))->setTimezone('UTC')->toDateTimeString(),
-                'end_at'      => Carbon::createFromFormat('Y-m-d H:i:s', $endTime, config('app.timezone'))->setTimezone('UTC')->toDateTimeString(),
+                'start_at'    => Carbon::createFromFormat('Y-m-d H:i:s', $startTime, config('app.timezone'))->setTimezone('UTC'),
+                'end_at'      => Carbon::createFromFormat('Y-m-d H:i:s', $endTime, config('app.timezone'))->setTimezone('UTC'),
             ];
             
             Cache::set($taskKey, json_encode($task), $ttl);
