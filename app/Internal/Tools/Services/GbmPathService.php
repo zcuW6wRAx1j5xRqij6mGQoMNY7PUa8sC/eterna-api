@@ -74,10 +74,6 @@ final class GbmPathService {
             $candles = [];
             $time    = $start;
             for ($i = 0, $n = count($prices) - 1; $i < $n; $i++) {
-                if ($i == 0) {
-                    Log::info('开始时间戳：' . $time->copy()->timestamp);
-                    Log::info('开始日期：' . $time->copy()->setTimezone(config('app.timezone'))->toDateTimeString());
-                }
                 $open  = $prices[$i];
                 $close = $prices[$i + 1];
                 $high  = max($open, $close);
