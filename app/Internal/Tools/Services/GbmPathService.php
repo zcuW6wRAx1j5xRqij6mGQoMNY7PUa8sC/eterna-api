@@ -36,7 +36,7 @@ final class GbmPathService {
         float                    $targetHigh,
         float                    $targetLow,
         int                      $intervalSeconds = 1,
-        float                    $sigma = 0.02,
+        float                    $sigma = 0.001,
         ?int                     $scale = 5,
     ): array
     {
