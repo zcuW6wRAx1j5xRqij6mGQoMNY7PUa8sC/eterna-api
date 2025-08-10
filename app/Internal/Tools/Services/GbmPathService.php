@@ -89,7 +89,7 @@ final class GbmPathService {
                     'high'      => round($high, $scale),
                     'low'       => round($low, $scale),
                     'close'     => round($i == ($n - 1) ? $endClose : $close, $scale),
-                    'timestamp' => Carbon::parse($time)->timestamp * 1000,
+                    'timestamp' => $time->copy()->timestamp * 1000,
                 ];
                 
                 $time = $time->addSeconds($intervalSeconds);
