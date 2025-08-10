@@ -44,9 +44,9 @@ final class GbmPathService {
     {
         try {
             // 解析开始和结束时间
-            $start = Carbon::parse($startTime, 'Asia/Shanghai');
+            $start = Carbon::parse($startTime, config('app.timezone'));
             
-            $end = Carbon::parse($endTime, 'Asia/Shanghai');
+            $end = Carbon::parse($endTime, config('app.timezone'));
             // 计算总分钟数和总步数
             $totalMinutes = max(0, $end->diffInSeconds($start));
             $steps        = max(3, intdiv(max(1, $totalMinutes), max(1, $intervalSeconds)));
