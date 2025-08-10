@@ -525,8 +525,8 @@ class MarketController extends ApiController {
                 'low'         => $targetLow,
                 'close'       => $close,
                 'sigma'       => 0.02,
-                'start_at'    => Carbon::createFromFormat('Y-m-d H:i:s', $startTime, config('app.timezone'))->setTimezone('UTC'),
-                'end_at'      => Carbon::createFromFormat('Y-m-d H:i:s', $endTime, config('app.timezone'))->setTimezone('UTC'),
+                'start_at'    => Carbon::createFromFormat('Y-m-d H:i:s', $startTime, config('app.timezone'))->setTimezone('UTC')->toIso8601String(),
+                'end_at'      => Carbon::createFromFormat('Y-m-d H:i:s', $endTime, config('app.timezone'))->setTimezone('UTC')->toIso8601String(),
             ];
             
             Cache::set($taskKey, json_encode($task), $ttl);
