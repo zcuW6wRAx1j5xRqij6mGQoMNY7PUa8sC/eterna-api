@@ -438,7 +438,7 @@ class MarketController extends ApiController {
         $data = $query->orderByDesc('id')->paginate($request->get('page_size'), ['*'], null, $request->get('page'));
         $data = listResp($data);
         foreach ($data['items'] as &$item) {
-            if ($item['status'] == CommonEnums::Yes && Carbon::now()->isAfter(Carbon::parseFromLocale($item['end_at']))) {
+            if ($item['status'] == CommonEnums::Yes && Carbon::now(config('app.timezone'))->isAfter(Carbon::parseFromLocale($item['end_at']))) {
                 $item['status'] = 3;
             }
             
