@@ -471,9 +471,9 @@ class MarketController extends ApiController {
         $close      = $request->input('close');
         $startTime  = $request->input('start_time');
         $endTime    = $request->input('end_time');
-//        $lang       = $request->header('accept-language', 'zh-cn');
-//        $lang       = strtolower(mb_substr($lang, 0, 5)) == 'zh-cn';
-        $timezone = config('app.timezone');
+        $lang       = $request->header('accept-language', 'zh-cn');
+        $lang       = strtolower(mb_substr($lang, 0, 5)) == 'zh-cn';
+        $timezone   = $lang == 'zh-cn' ? 'Asia/Shanghai' : config('app.timezone');
         
         try {
             // 构建查询条件以验证交易对信息
@@ -503,8 +503,6 @@ class MarketController extends ApiController {
                 $endTime,
                 $targetHigh,
                 $targetLow,
-                1,
-                $timezone
             );
             
             $ttl = 30 * 60;

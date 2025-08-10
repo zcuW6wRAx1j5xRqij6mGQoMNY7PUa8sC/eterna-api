@@ -23,7 +23,6 @@ final class GbmPathService {
      * @param float                    $targetHigh      目标最高价
      * @param float                    $targetLow       目标最低价
      * @param int                      $intervalSeconds 每根K线的时间间隔（秒），默认为1秒钟
-     * @param ?string                  $timezone        时间时区，默认为 Europe/Berlin
      * @param float                    $sigma           波动率参数，用于控制价格波动幅度，默认为0.02
      * @param ?int                     $scale           小数位数，默认为5
      *
@@ -38,16 +37,15 @@ final class GbmPathService {
         float                    $targetHigh,
         float                    $targetLow,
         int                      $intervalSeconds = 1,
-        ?string                  $timezone = 'Europe/Berlin',
         float                    $sigma = 0.001,
         ?int                     $scale = 5,
     ): array
     {
         try {
             // 解析开始和结束时间
-            $start = Carbon::parse($startTime, $timezone);
+            $start = Carbon::parse($startTime, config('app.timezone'));
             
-            $end = Carbon::parse($endTime, $timezone);
+            $end = Carbon::parse($endTime, config('app.timezone'));
             // 计算总分钟数和总步数
             $totalMinutes = max(0, $end->diffInSeconds($start));
             $steps        = max(3, intdiv(max(1, $totalMinutes), max(1, $intervalSeconds)));
