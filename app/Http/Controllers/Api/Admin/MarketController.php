@@ -524,9 +524,10 @@ class MarketController extends ApiController {
                 'low'         => $targetLow,
                 'close'       => $close,
                 'sigma'       => 0.02,
-                'start_at'    => Carbon::parse($startTime, 'UTC')->toDateTimeString(),
-                'end_at'      => Carbon::parse($endTime, 'UTC')->toDateTimeString(),
+                'start_at'    => Carbon::createFromFormat('Y-m-d H:i:s', $startTime, config('app.timezone'))->setTimezone('UTC')->toDateTimeString(),
+                'end_at'      => Carbon::createFromFormat('Y-m-d H:i:s', $endTime, config('app.timezone'))->setTimezone('UTC')->toDateTimeString(),
             ];
+            
             Cache::set($taskKey, json_encode($task), $ttl);
             $interval = config('kline.interval', "1m");
             $candles  = KlineAggregatorService::aggregate($data, [$interval]);
