@@ -438,7 +438,7 @@ class MarketController extends ApiController {
         $data = $query->orderByDesc('id')->paginate($request->get('page_size'), ['*'], null, $request->get('page'));
         $data = listResp($data);
         foreach ($data['items'] as &$item) {
-            if ($item['status'] == CommonEnums::Yes && Carbon::now()->isAfter(Carbon::parse($item['end_at']))) {
+            if ($item['status'] == CommonEnums::Yes && Carbon::now()->isAfter(Carbon::parse($item['end_at'], config('app.timezone')))) {
                 $item['status'] = 3;
             }
             
@@ -716,6 +716,7 @@ class MarketController extends ApiController {
             
             // 删除原始缓存数据，提交事务，并返回成功响应
             Cache::delete($key);
+            µ
             Cache::delete($taskKey);
             DB::commit();
             
