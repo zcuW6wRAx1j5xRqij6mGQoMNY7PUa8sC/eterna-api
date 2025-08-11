@@ -51,7 +51,9 @@ class BotTask extends Model {
     
     public function getStatusAttribute()
     {
-        if ($this->attributes['status'] == CommonEnums::Yes && Carbon::parse($this->attributes['end_at'], config('app.timezone')) < Carbon::now()) {
+        if ($this->attributes['status'] == CommonEnums::Yes && Carbon::now()->isAfter(Carbon::parse($this->attributes['end_at'], 'UTC')
+                                                                                            ->setTimezone(config('app.timezone')))
+        ) {
             $this->attributes['status'] = 3;
         }
         return $this->attributes['status'];
