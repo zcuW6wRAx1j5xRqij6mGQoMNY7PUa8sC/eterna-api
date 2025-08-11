@@ -437,16 +437,16 @@ class MarketController extends ApiController {
         
         $data = $query->orderByDesc('id')->paginate($request->get('page_size'), ['*'], null, $request->get('page'));
         $data = listResp($data);
-        foreach ($data['items'] as &$item) {
-            if ($item['status'] == CommonEnums::Yes && Carbon::now(config('app.timezone'))->isAfter(Carbon::parse($item['end_at'], 'UTC')
-                                                                                                          ->setTimezone(config('app.timezone')))
-            ) {
-                $item['status'] = 3;
-            }
-            
-            $item['start_at'] = date('Y-m-d H:i:s', strtotime('+8 hour', strtotime($item['start_at'])));
-            $item['end_at']   = date('Y-m-d H:i:s', strtotime('+8 hour', strtotime($item['end_at'])));
-        }
+//        foreach ($data['items'] as &$item) {
+//            if ($item['status'] == CommonEnums::Yes && Carbon::now(config('app.timezone'))->isAfter(Carbon::parse($item['end_at'], 'UTC')
+//                                                                                                          ->setTimezone(config('app.timezone')))
+//            ) {
+//                $item['status'] = 3;
+//            }
+//
+//            $item['start_at'] = date('Y-m-d H:i:s', strtotime('+8 hour', strtotime($item['start_at'])));
+//            $item['end_at']   = date('Y-m-d H:i:s', strtotime('+8 hour', strtotime($item['end_at'])));
+//        }
         
         return $this->ok($data);
     }

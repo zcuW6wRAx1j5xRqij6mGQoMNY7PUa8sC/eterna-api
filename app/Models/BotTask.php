@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
+use App\Enums\CommonEnums;
 use Illuminate\Database\Eloquent\Model;
 
 class BotTask extends Model {
@@ -35,5 +37,23 @@ class BotTask extends Model {
     protected function serializeDate(\DateTimeInterface $date)
     {
         return $date->setTimezone(new \DateTimeZone(env('TIMEZONE')))->format('Y-m-d H:i:s');
+    }
+    
+    public function getStartAtAttribute(): string
+    {
+        return Carbon::parse($this->attributes['start_at'], 'UTC')->setTimezone(config('app.timezone'))->toDateTimeString();
+    }
+    
+    public function getEndAtAttribute(): string
+    {
+        return Carbon::parse($this->attributes['end_at'], 'UTC')->setTimezone(config('app.timezone'))->toDateTimeString();
+    }
+    
+    public function getStatusAttribute()
+    {
+        if ($this->attributes['status'] == CommonEnums::Yes && Carbon::parse($this->attributes['end_at'], config('app.timezone')) < Carbon::now()) {
+            $this->attributes['status'] = 3;
+        }
+        return $this->attributes['status'];
     }
 }
