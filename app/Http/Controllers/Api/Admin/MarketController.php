@@ -494,7 +494,7 @@ class MarketController extends ApiController {
 //            $cache  = (new InfluxDB('market_spot'))->queryKline($symbol, '1m', '-1m');
 //            $open = $cache && isset($cache[0]['c']) ? $cache[0]['c'] : config('kline.default_open');
 
-            $sigma = 0.0008;
+            $sigma = 0.0006;
 
             $open = $open <= 0 ? 0.0001 : $open;
             $data = GbmPathService::generateCandles(
