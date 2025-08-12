@@ -123,27 +123,23 @@ final class GbmPathService {
             // 价格保持正
             $price = max(0.0001, exp($logStart));
             if ($direction) {
-                if ($i == 0) {
-                    if ($price > $endPrice) {
-                        $price = $endPrice - ($price - $endPrice);
-                    }
-                } else {
-                    if ($i && $path[$i - 1] == $endPrice && $price > $endPrice) {
-                        $price = $endPrice - ($price - $endPrice);
-                    } else {
-                        $price = min($price, $endPrice);
+                if ($price < $startPrice) {
+                    $price = $startPrice + ($startPrice - $price);
+                } else if ($i) {
+                    if ($path[$i - 1] == $endPrice && $price > $endPrice) {
+                        $price = $endPrice + ($price - $endPrice);
+                    } else if ($path[$i - 1] < $endPrice && $price > $endPrice) {
+                        $price = $endPrice;
                     }
                 }
             } else {
-                if ($i == 0) {
-                    if ($price < $endPrice) {
+                if ($price > $startPrice) {
+                    $price = $startPrice - ($price - $startPrice);
+                } else if ($i) {
+                    if ($path[$i - 1] == $endPrice && $price < $endPrice) {
                         $price = $endPrice + ($endPrice - $price);
-                    }
-                } else {
-                    if ($i && $path[$i - 1] == $endPrice && $price < $endPrice) {
-                        $price = $endPrice + ($endPrice - $price);
-                    } else {
-                        $price = max($endPrice, $price);
+                    } else if ($path[$i - 1] > $endPrice && $price < $endPrice) {
+                        $price = $endPrice;
                     }
                 }
             }
@@ -167,7 +163,7 @@ final class GbmPathService {
         int   $steps,
         float $low,
         float $high,
-        float $sigma = 0.02,   // 噪声强度（区间内的“抖动”）
+        float $sigma = 0.0001,   // 噪声强度（区间内的“抖动”）
         float $kappa = 3.0     // 回复强度（越大越贴近目标与中线，波动更温和）
     ): array
     {
