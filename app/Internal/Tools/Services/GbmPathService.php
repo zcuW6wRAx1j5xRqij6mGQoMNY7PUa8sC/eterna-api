@@ -10,6 +10,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 
 final class GbmPathService {
+    
     /**
      * 生成模拟的K线数据（蜡烛图数据）
      *
@@ -58,7 +59,7 @@ final class GbmPathService {
             
             // 构造价格序列：起始价 + 三段GBM路径
             $prices = [$startOpen];
-            
+
 //            $lo = min($targetLow, $startOpen, $endClose);
 //            $hi = max($targetHigh, $startOpen, $endClose);
 
@@ -76,6 +77,7 @@ final class GbmPathService {
                 $prices = array_merge($prices, self::gbmSegment($targetHigh, $endClose, $seg3, $sigma, 0));
             }
             $prices = self::verifyData($prices, $targetHigh, $targetLow);
+            dd($prices);
             // 根据价格序列构造K线数据
             $candles = [];
             $time    = $start;
@@ -122,16 +124,28 @@ final class GbmPathService {
             // 价格保持正
             $price = max(0.0001, exp($logStart));
             if ($direction) {
-                if($i && $path[$i-1] == $endPrice && $price > $endPrice){
-                    $price = $endPrice - ($price - $endPrice);
-                }else {
-                    $price = min($price, $endPrice);
+                if ($i == 0) {
+                    if ($price > $endPrice) {
+                        $price = $endPrice - ($price - $endPrice);
+                    }
+                } else {
+                    if ($i && $path[$i - 1] == $endPrice && $price > $endPrice) {
+                        $price = $endPrice - ($price - $endPrice);
+                    } else {
+                        $price = min($price, $endPrice);
+                    }
                 }
             } else {
-                if($i && $path[$i-1] == $endPrice && $price < $endPrice){
-                    $price = $endPrice + ($endPrice - $price);
-                }else {
-                    $price = max($endPrice, $price);
+                if ($i == 0) {
+                    if ($price < $endPrice) {
+                        $price = $endPrice + ($endPrice - $price);
+                    }
+                } else {
+                    if ($i && $path[$i - 1] == $endPrice && $price < $endPrice) {
+                        $price = $endPrice + ($endPrice - $price);
+                    } else {
+                        $price = max($endPrice, $price);
+                    }
                 }
             }
             $path[] = $price;
