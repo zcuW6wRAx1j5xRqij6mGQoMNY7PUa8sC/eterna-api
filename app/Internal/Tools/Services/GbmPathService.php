@@ -120,12 +120,12 @@ final class GbmPathService {
 
             // 价格保持正
             $price  = max(0.0001, exp($logStart));
-            if($price>$high){
-                $price = $high;
-            }
-            if($price<$low){
-                $price = $low;
-            }
+//            if($price>$high){
+//                $price = $high;
+//            }
+//            if($price<$low){
+//                $price = $low;
+//            }
             // --- - 严格限制最高、最低价 start
 //            switch ($seq) {
 //                case 1:
