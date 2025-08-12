@@ -475,16 +475,6 @@ class MarketController extends ApiController {
         $startTime  = $request->input('start_time');
         $endTime    = $request->input('end_time');
         
-//        $data = GbmPathService::generateCandles(
-//            $open,
-//            $close,
-//            $startTime,
-//            $endTime,
-//            $targetHigh,
-//            $targetLow,
-//            0.0006
-//        );
-//        dd($data);
         try {
             // 构建查询条件以验证交易对信息
             $where = [
@@ -517,14 +507,6 @@ class MarketController extends ApiController {
                 $targetLow,
                 $sigma
             );
-//            $data = KlineService::generateCandles(
-//                $open,
-//                $close,
-//                $startTime,
-//                $endTime,
-//                $targetHigh,
-//                $targetLow,
-//            );
             
             $ttl = 30 * 60;
             $uid = $request->user()->id;

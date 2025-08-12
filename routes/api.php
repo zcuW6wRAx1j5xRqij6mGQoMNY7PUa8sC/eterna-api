@@ -190,7 +190,7 @@ Route::get('admin/menu/selector',          [MenuController::class, 'selector']);
 Route::get('admin/role/selector',          [RoleController::class, 'selector']);//角色选择框
 
 
-Route::prefix('admin')->group(function(){
+Route::prefix('admin')->middleware('auth:admin')->group(function(){
     Route::post('/images/upload',[AdminCommonController::class,'uploadImagePath']);
 
     Route::prefix('ieo')->controller(IeoController::class)->group(function(){
