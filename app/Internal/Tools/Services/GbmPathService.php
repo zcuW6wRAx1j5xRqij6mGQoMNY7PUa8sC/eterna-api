@@ -93,11 +93,13 @@ final class GbmPathService {
                 // 在高低价上加入随机波动以增强真实性
 //                $high      += (random_int(0, 10) / 100) * $sigma * $high;
 //                $low       -= (random_int(0, 10) / 100) * $sigma * $low;
+                // 格式化成 $scale 小数
+                
                 $candles[] = [
-                    'open'      => round($open, $scale),
-                    'high'      => round($high, $scale),
-                    'low'       => round($low, $scale),
-                    'close'     => round($i == ($n - 1) ? $endClose : $close, $scale),
+                    'open'      => number_format($open, $scale),
+                    'high'      => number_format($high, $scale),
+                    'low'       => number_format($low, $scale),
+                    'close'     => number_format($i == ($n - 1) ? $endClose : $close, $scale),
                     'timestamp' => $time->copy()->timestamp * 1000,
                 ];
                 $time      = $time->addSeconds($intervalSeconds);
