@@ -499,12 +499,12 @@ class MarketController extends ApiController {
             
             $open = $open <= 0 ? 0.0001 : $open;
             $data = GbmPathService::generateCandles(
-                $open,
-                $close,
+                (float)$open,
+                (float)$close,
                 $startTime,
                 $endTime,
-                $targetHigh,
-                $targetLow,
+                (float)$targetHigh,
+                (float)$targetLow,
                 $sigma
             );
             
