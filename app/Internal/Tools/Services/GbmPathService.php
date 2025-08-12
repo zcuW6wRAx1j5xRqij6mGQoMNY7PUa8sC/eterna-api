@@ -84,8 +84,8 @@ final class GbmPathService {
                 $low   = min($open, $close);
                 
                 // 在高低价上加入随机波动以增强真实性
-                $high      += (random_int(0, 10) / 100) * $sigma * $high;
-                $low       -= (random_int(0, 10) / 100) * $sigma * $low;
+//                $high      += (random_int(0, 10) / 100) * $sigma * $high;
+//                $low       -= (random_int(0, 10) / 100) * $sigma * $low;
                 $candles[] = [
                     'open'      => round($open, $scale),
                     'high'      => round($high, $scale),
