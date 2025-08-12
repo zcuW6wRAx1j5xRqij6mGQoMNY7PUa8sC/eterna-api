@@ -59,8 +59,8 @@ final class GbmPathService {
             // 构造价格序列：起始价 + 三段GBM路径
             $prices = [$startOpen];
             
-            $lo = min($targetLow, $startOpen, $endClose);
-            $hi = max($targetHigh, $startOpen, $endClose);
+//            $lo = min($targetLow, $startOpen, $endClose);
+//            $hi = max($targetHigh, $startOpen, $endClose);
 
 //            $prices = array_merge($prices, self::rangeBoundSegment($startOpen,  $targetHigh, $seg1, $lo, $hi, $sigma, 3.0));
 //            $prices = array_merge($prices, self::rangeBoundSegment($targetHigh, $targetLow,  $seg2, $lo, $hi, $sigma, 3.0));
@@ -76,7 +76,6 @@ final class GbmPathService {
                 $prices = array_merge($prices, self::gbmSegment($targetHigh, $endClose, $seg3, $sigma, 0));
             }
             $prices = self::verifyData($prices, $targetHigh, $targetLow);
-            
             // 根据价格序列构造K线数据
             $candles = [];
             $time    = $start;
@@ -127,9 +126,17 @@ final class GbmPathService {
             // 价格保持正
             $price = max(0.0001, exp($logStart));
             if ($direction) {
-                $price = min($price, $endPrice);
+                if($i && $path[$i-1] == $endPrice && $price > $endPrice){
+                    $price = $endPrice - ($price - $endPrice);
+                }else {
+                    $price = min($price, $endPrice);
+                }
             } else {
-                $price = max($endPrice, $price);
+                if($i && $path[$i-1] == $endPrice && $price < $endPrice){
+                    $price = $endPrice + ($endPrice - $price);
+                }else {
+                    $price = max($endPrice, $price);
+                }
             }
             $path[] = $price;
         }
