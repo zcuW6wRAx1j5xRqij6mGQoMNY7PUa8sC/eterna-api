@@ -66,9 +66,9 @@ final class GbmPathService {
 //            $prices = array_merge($prices, self::rangeBoundSegment($targetHigh, $targetLow,  $seg2, $lo, $hi, $sigma, 3.0));
 //            $prices = array_merge($prices, self::rangeBoundSegment($targetLow,  $endClose,   $seg3, $lo, $hi, $sigma, 3.0));
 
-            $prices = array_merge($prices, self::gbmSegment($startOpen, $targetHigh, $seg1, $sigma));
-            $prices = array_merge($prices, self::gbmSegment($targetHigh, $targetLow, $seg2, $sigma));
-            $prices = array_merge($prices, self::gbmSegment($targetLow, $endClose, $seg3, $sigma));
+            $prices = array_merge($prices, self::gbmSegment($startOpen, $targetHigh, $seg1, $sigma, 1));
+            $prices = array_merge($prices, self::gbmSegment($targetHigh, $targetLow, $seg2, $sigma, 1));
+            $prices = array_merge($prices, self::gbmSegment($targetLow, $endClose, $seg3, $sigma, 3));
 
             // 根据价格序列构造K线数据
             $candles = [];
@@ -106,7 +106,7 @@ final class GbmPathService {
 
 
     /** 生成带“终点约束”的 GBM 段（对数空间线性引导 + 高斯噪声） */
-    private static function gbmSegment(float $startPrice, float $endPrice, int $steps, float $sigma): array
+    private static function gbmSegment(float $startPrice, float $endPrice, int $steps, float $sigma, int $seq=0): array
     {
         $path     = [];
         $logStart = log(max($startPrice, 1e-8));
@@ -120,6 +120,28 @@ final class GbmPathService {
 
             // 价格保持正
             $price  = max(0.0001, exp($logStart));
+            // --- - 严格限制最高、最低价 start
+            switch ($seq) {
+                case 1:
+                    if($price>$endPrice){
+                        $price = $endPrice;
+                    }
+                    break;
+                case 2:
+                    if($price>$startPrice){
+                        $price = $endPrice;
+                    }
+                    if($price<$endPrice){
+                        $price = $startPrice;
+                    }
+                    break;
+                case 3:
+                    if($price<$startPrice){
+                        $price = $endPrice;
+                    }
+                    break;
+            }
+            // --- - 严格限制最高、最低价 end
             $path[] = $price;
         }
         return $path;
