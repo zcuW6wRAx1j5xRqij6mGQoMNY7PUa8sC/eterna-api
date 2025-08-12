@@ -513,7 +513,6 @@ class MarketController extends ApiController {
                 $endTime,
                 $targetHigh,
                 $targetLow,
-                $sigma,
             );
 
             $ttl = 30 * 60;
