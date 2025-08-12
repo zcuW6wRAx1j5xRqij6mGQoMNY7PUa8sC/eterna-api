@@ -39,13 +39,13 @@ use InvalidArgumentException;
 
 /** @package App\Http\Controllers\Api\Admin */
 class MarketController extends ApiController {
-    
+
     public function coins(Request $request)
     {
         $data = SymbolCoin::query()->orderBy('sort')->get();
         return $this->ok($data);
     }
-    
+
     /**
      * 简单symbol 数据, 仅限后台筛选使用
      *
@@ -59,7 +59,7 @@ class MarketController extends ApiController {
         $data = Symbol::select(['id', 'name', 'symbol', 'binance_symbol'])->where('quote_asset', 'usdt')->where('status', CommonEnums::Yes)->get();
         return $this->ok($data);
     }
-    
+
     /**
      * 简单合约列表 - 用于后台查询
      *
@@ -78,7 +78,7 @@ class MarketController extends ApiController {
         ])->select(['id', 'symbol_id'])->where('status', CommonEnums::Yes)->get();
         return $this->ok($futures);
     }
-    
+
     /**
      * 交易对列表
      *
@@ -97,7 +97,7 @@ class MarketController extends ApiController {
             'status'    => ['nullable', Rule::in([CommonEnums::Yes, CommonEnums::No])],
             'name'      => 'nullable|string',
         ]);
-        
+
         $status = $request->get('status', null);
         $name   = $request->get('name', '');
         $query  = Symbol::query();
@@ -107,20 +107,20 @@ class MarketController extends ApiController {
         if ($name) {
             $query->where('name', 'like', '%' . $name . '%');
         }
-        
+
         $data = $query->orderBy('created_at')->paginate($request->get('page_size'), ['*'], null, $request->get('page'));
         return $this->ok(listResp($data));
     }
-    
+
     public function fakePrice(Request $request)
     {
         $request->validate([
             'symbol_type' => ['nullable', Rule::in([SymbolEnums::SymbolTypeFutures, SymbolEnums::SymbolTypeSpot])],
             'symbol'      => 'nullable|string',
         ]);
-        
+
         $st = $request->get('symbol_type');
-        
+
         $symbol = $request->get('symbol', '');
         $query  = PlatformSymbolPrice::with(['symbol']);
         if ($st) {
@@ -131,14 +131,14 @@ class MarketController extends ApiController {
                 $query->where('symbol', 'like', '%' . $symbol . '%');
             });
         }
-        
+
         $data = $query->get();
         if ($data->isEmpty()) {
             return $this->ok([]);
         }
         return $this->ok($data);
     }
-    
+
     public function cancelFakePrice(Request $request, SetFakePrice $setFakePrice)
     {
         $request->validate([
@@ -155,7 +155,7 @@ class MarketController extends ApiController {
         $setFakePrice->handleCancel($cfg->id);
         return $this->ok(true);
     }
-    
+
     /**
      * @param Request $request
      *
@@ -170,12 +170,12 @@ class MarketController extends ApiController {
         $request->validate([
             'id' => 'required|numeric',
         ]);
-        
+
         $air = PlatformSymbolPrice::with('symbol')->where('id', $request->get('id'))->first();
         if (!$air) {
             throw new LogicException('数据不正确');
         }
-        
+
         $price = 0;
         if ($air->symbol_type == SymbolEnums::SymbolTypeSpot) {
             $price = (new FetchSymbolQuote)($air->symbol->symbol);
@@ -184,7 +184,7 @@ class MarketController extends ApiController {
         }
         return $this->ok($price);
     }
-    
+
     public function setFakePrice(Request $request)
     {
         $request->validate([
@@ -193,7 +193,7 @@ class MarketController extends ApiController {
             // 'duration_time' => 'required|numeric',
             'price'      => 'required|numeric',
         ]);
-        
+
         DB::transaction(function () use ($request) {
             $id        = $request->get('id');
             $price     = $request->get('price');
@@ -203,7 +203,7 @@ class MarketController extends ApiController {
                 throw new LogicException('开始时间必须大于当前时间');
             }
             $startTime = intval($startTime);
-            
+
             $before = 0;
             $cfg    = PlatformSymbolPrice::with('symbol')->where('id', $id)->first();
             if (!$cfg) {
@@ -217,11 +217,11 @@ class MarketController extends ApiController {
             $cfg->start_time    = $now->addMinutes($startTime)->toDateTimeString();
             $cfg->status        = CommonEnums::Yes;
             $cfg->task_id       = generateUuid();
-            
+
             $before          = $cfg->fake_price;
             $cfg->fake_price = $price;
             $cfg->save();
-            
+
             $log           = new AdminUserLog();
             $log->admin_id = $request->user()->id;
             $log->log_type = AdminLogTypeEnums::LogTypeSettingFake;
@@ -232,20 +232,20 @@ class MarketController extends ApiController {
             ];
             $log->ip       = $request->ip();
             $log->save();
-            
+
             (new SetFakePrice)($cfg, $startTime);
-            
+
             $jobStart = Carbon::now()->addMinutes($startTime);
             // $jobStopTime = $jobStart->copy()->addMinutes($cfg->duration_time + 2);
             // StopFakePrice::dispatch($cfg)->delay($jobStopTime);
-            
+
             // $jobStart = Carbon::now()->addSeconds($startTime->diffInSeconds($now));
             // StartFakePrice::dispatch($cfg)->delay($jobStart);
             return true;
         });
         return $this->ok(true);
     }
-    
+
     /**
      * 修改交易对信息
      *
@@ -261,17 +261,17 @@ class MarketController extends ApiController {
             'id'     => 'required|numeric',
             'status' => ['nullable', Rule::in([CommonEnums::Yes, CommonEnums::No])],
         ]);
-        
+
         $status = $request->get('status', null);
         $symbol = Symbol::findOrFail($request->get('id'));
-        
+
         if ($status !== null) {
             $symbol->status = $status;
         }
         $symbol->save();
         return $this->ok(true);
     }
-    
+
     /**
      * 现货交易对
      *
@@ -291,12 +291,12 @@ class MarketController extends ApiController {
             'keyword'      => 'nullable|string',
             'is_recommend' => ['nullable', Rule::in([CommonEnums::Yes, CommonEnums::No])],
         ]);
-        
-        
+
+
         $status      = $request->get('status', null);
         $keyword     = $request->get('keyword', '');
         $isRecommend = $request->get('is_recommend', null);
-        
+
         $query = SymbolSpot::with('symbol');
         if ($status !== null) {
             $query->where('status', $status);
@@ -311,11 +311,11 @@ class MarketController extends ApiController {
         if ($isRecommend !== null) {
             $query->where('is_recommend', $isRecommend);
         }
-        
+
         $data = $query->orderBy('sort')->paginate($request->get('page_size'), ['*'], null, $request->get('page'));
         return $this->ok(listResp($data));
     }
-    
+
     /**
      * 修改现货交易对
      *
@@ -350,7 +350,7 @@ class MarketController extends ApiController {
         $model->save();
         return $this->ok(true);
     }
-    
+
     /**
      * 合约交易对列表
      *
@@ -369,11 +369,11 @@ class MarketController extends ApiController {
             'status'    => ['nullable', Rule::in([CommonEnums::Yes, CommonEnums::No])],
             'keyword'   => 'nullable|string',
         ]);
-        
-        
+
+
         $status  = $request->get('status', null);
         $keyword = $request->get('keyword', '');
-        
+
         $query = SymbolFutures::with('symbol');
         if ($status !== null) {
             $query->where('status', $status);
@@ -385,12 +385,12 @@ class MarketController extends ApiController {
             }
             $query->whereIn('symbol_id', $s->pluck('id')->toArray());
         }
-        
-        
+
+
         $data = $query->orderBy('sort')->paginate($request->get('page_size'), ['*'], null, $request->get('page'));
         return $this->ok(listResp($data));
     }
-    
+
     /**
      * 修改合约交易对
      *
@@ -420,7 +420,7 @@ class MarketController extends ApiController {
         $model->save();
         return $this->ok(true);
     }
-    
+
     public function BotTaskList(Request $request)
     {
         $request->validate([
@@ -428,13 +428,13 @@ class MarketController extends ApiController {
             'page_size' => 'numeric',
             'status'    => ['nullable', Rule::in([CommonEnums::Yes, CommonEnums::No])],
         ]);
-        
+
         $status = $request->get('status', null);
         $query  = BotTask::query()->with(['symbol']);
         if ($status !== null) {
             $query->where('status', $status);
         }
-        
+
         $data = $query->orderByDesc('id')->paginate($request->get('page_size'), ['*'], null, $request->get('page'));
         $data = listResp($data);
 //        foreach ($data['items'] as &$item) {
@@ -447,10 +447,10 @@ class MarketController extends ApiController {
 //            $item['start_at'] = date('Y-m-d H:i:s', strtotime('+8 hour', strtotime($item['start_at'])));
 //            $item['end_at']   = date('Y-m-d H:i:s', strtotime('+8 hour', strtotime($item['end_at'])));
 //        }
-        
+
         return $this->ok($data);
     }
-    
+
     /**
      * 预览K线图数据
      *
@@ -473,7 +473,7 @@ class MarketController extends ApiController {
         $close      = $request->input('close');
         $startTime  = $request->input('start_time');
         $endTime    = $request->input('end_time');
-        
+
         try {
             // 构建查询条件以验证交易对信息
             $where = [
@@ -487,13 +487,15 @@ class MarketController extends ApiController {
                 Log::error('Coin Not Found');
                 return $this->fail(__('Coin Not Found'));
             }
-            
+
             $symbol = strtoupper($info->symbol);
-            
+
             // 确定开盘价，如果缓存中有数据则使用缓存数据，否则使用默认值
 //            $cache  = (new InfluxDB('market_spot'))->queryKline($symbol, '1m', '-1m');
 //            $open = $cache && isset($cache[0]['c']) ? $cache[0]['c'] : config('kline.default_open');
-            
+
+            $sigma = 0.0008;
+
             $open = $open <= 0 ? 0.0001 : $open;
             $data = GbmPathService::generateCandles(
                 $open,
@@ -502,15 +504,16 @@ class MarketController extends ApiController {
                 $endTime,
                 $targetHigh,
                 $targetLow,
+                $sigma,
             );
-            
+
             $ttl = 30 * 60;
             $uid = $request->user()->id;
             // 构建缓存键名
             $key = sprintf(config('kline.preview_key'), $uid, $symbol);
             // 将模拟的K线图数据存储到缓存中
             $result = Cache::set($key, json_encode($data), $ttl);
-            
+
             // 如果缓存设置失败，则记录错误日志并返回错误响应
             if (!$result) {
                 Log::error('Cache Set Failed');
@@ -524,11 +527,11 @@ class MarketController extends ApiController {
                 'high'        => $targetHigh,
                 'low'         => $targetLow,
                 'close'       => $close,
-                'sigma'       => 0.001,
+                'sigma'       => $sigma,
                 'start_at'    => Carbon::parse($startTime, config('app.timezone'))->setTimezone('UTC')->toDateTimeString(),
                 'end_at'      => Carbon::parse($endTime, config('app.timezone'))->setTimezone('UTC')->toDateTimeString(),
             ];
-            
+
             Cache::set($taskKey, json_encode($task), $ttl);
             $interval = config('kline.interval', "1m");
             $candles  = KlineAggregatorService::aggregate($data, [$interval]);
@@ -542,7 +545,7 @@ class MarketController extends ApiController {
             return $this->fail('Failed');
         }
     }
-    
+
     /**
      * 修改K线类型
      *
@@ -560,49 +563,49 @@ class MarketController extends ApiController {
         // 从请求中获取币种ID、币种类型和K线类型，K线类型默认为'1m'
         $coinID   = $request->input('coin_id');
         $interval = $request->input('type', '1m');
-        
+
         try {
             // 构建查询条件，包括币种ID和状态为启用
             $where = [
                 'id'     => $coinID,
                 'status' => CommonEnums::Yes,
             ];
-            
+
             // 根据查询条件获取币种信息
             $info = Symbol::where($where)->first();
-            
+
             // 如果没有找到对应的币种信息，返回错误提示
             if (!$info) {
                 Log::error('Coin Not Found');
                 return $this->fail('Coin Not Found');
             }
-            
+
             // 获取当前用户ID
             $uid = $request->user()->id;
-            
+
             // 生成缓存键名
             $symbol = strtoupper($info->symbol);
             // 根据用户ID、币种符号和币种类型生成缓存键名
             $key = sprintf(config('kline.preview_key'), $uid, $symbol);
-            
+
             // 从缓存中获取K线数据
             $data = Cache::get($key);
-            
+
             // 如果缓存中没有数据，返回错误提示
             if (!$data) {
                 // 数据不存在，请重新生成
                 Log::error('Data Not Found, Please Re-Generate');
                 return $this->fail('Data Not Found, Please Re-Generate');
             }
-            
+
             $candles = KlineAggregatorService::aggregate(json_decode($data, true), [$interval]);
-            
+
             // 如果处理后的数据为空，返回错误提示
             if (!$candles) {
                 Log::error('Data is Empty');
                 return $this->fail('Data is Empty');
             }
-            
+
             // 返回成功响应，包含模拟的K线图数据
             $candles = $candles[$interval];
             return $this->ok($candles);
@@ -612,7 +615,7 @@ class MarketController extends ApiController {
             return $this->fail('Failed');
         }
     }
-    
+
     /**
      * 创建新的机器人任务
      *
@@ -628,10 +631,10 @@ class MarketController extends ApiController {
     {
         // 获取请求中的币种ID和计算明天的开始和结束时间
         $coinID = $request->get('coin_id');
-        
+
         // 开始数据库事务，确保数据一致性
         DB::beginTransaction();
-        
+
         try {
             // 查询币种信息，确保币种存在且状态为有效
             $where      = [
@@ -643,7 +646,7 @@ class MarketController extends ApiController {
                 Log::error('Coin Not Found');
                 return $this->fail('Coin Not Found');
             }
-            
+
             // 获取币种符号，并转换为大写
             $symbol = strtoupper($symbolInfo->symbol);
             // 获取当前用户ID
@@ -659,7 +662,7 @@ class MarketController extends ApiController {
             }
             // 解析缓存数据
             $task = json_decode($task, true);
-            
+
             // 根据用户ID和币种符号生成缓存键名，尝试获取缓存数据
             $key  = sprintf(config('kline.preview_key'), $uid, $symbol);
             $data = Cache::get($key);
@@ -677,13 +680,13 @@ class MarketController extends ApiController {
                 Log::error('No Data');
                 return $this->fail('Create Failed');
             }
-            
+
             // 创建新的机器人任务实例并填充数据
             $row = array_merge([
                 'status'  => CommonEnums::Yes,
                 'creator' => $uid,
             ], $task);
-            
+
             // 尝试保存机器人任务，如果失败则回滚事务并记录日志
             $task = BotTask::create($row);
             if (!$task) {
@@ -691,13 +694,13 @@ class MarketController extends ApiController {
                 Log::error('Create Bot Task Failed');
                 return $this->fail('Failed');
             }
-            
+
             // 生成队列键名，并尝试将数据缓存到新生成的队列键中，如果失败则回滚事务并记录日志
             $queueKey  = sprintf(config('kline.queue_key'), $symbol);
             $cacheData = RedisMarket()->get($queueKey);
             $cacheData = $cacheData ? json_decode($cacheData, true) : [];
             $cacheData = $cacheData ?: [];
-            
+
             // 生成队列数据
             $queueData = $cacheData ? array_replace($cacheData, $everySecondPrice) : $everySecondPrice;
             if (!$queueData) {
@@ -705,7 +708,7 @@ class MarketController extends ApiController {
                 Log::error('Data not cached correctly');
                 return $this->fail('Data not cached correctly' . json_encode($data));
             }
-            
+
             // 尝试将数据缓存到队列中，如果失败则回滚事务并记录日志
             $result = RedisMarket()->set($queueKey, json_encode($queueData));
             if (!$result) {
@@ -713,14 +716,14 @@ class MarketController extends ApiController {
                 Log::error('Add Bot Task Failed');
                 return $this->fail('Failed');
             }
-            
+
             $servicesBotTask->newTask($task);
-            
+
             // 删除原始缓存数据，提交事务，并返回成功响应
             Cache::delete($key);
             Cache::delete($taskKey);
             DB::commit();
-            
+
             return $this->ok();
         } catch (\Exception $e) {
             // 捕获异常，回滚事务，并记录错误日志
@@ -729,7 +732,7 @@ class MarketController extends ApiController {
             return $this->fail('Failed');
         }
     }
-    
+
     /**
      * 修改日常涨跌幅度
      *
@@ -745,7 +748,7 @@ class MarketController extends ApiController {
             'bound'   => 'required|numeric',
             'coin_id' => 'nullable|numeric',
         ]);
-        
+
         $where  = [
             'id'     => $request->get('coin_id', 2756),
             'status' => CommonEnums::Yes,
@@ -755,14 +758,14 @@ class MarketController extends ApiController {
             Log::error('Coin Not Found');
             return $this->fail('Coin Not Found');
         }
-        
+
         // 获取币种符号，并转换为大写
         $symbol = strtoupper($symbol);
         $servicesBotTask->changeFloat($symbol, $request->get('bound'));
-        
+
         return $this->ok(true);
     }
-    
+
     /**
      * 删除机器人行情任务
      *
@@ -777,18 +780,18 @@ class MarketController extends ApiController {
         $request->validate([
             'id' => 'required|numeric',
         ]);
-        
+
         $bot = BotTask::find($request->get('id'));
         if (!$bot) {
             return $this->fail('Bot Task Not Found');
         }
         $bot->delete();
-        
+
         $servicesBotTask->stopTask($bot);
-        
+
         return $this->ok(true);
     }
-    
+
     /**
      * 中止机器人行情任务
      *
@@ -803,7 +806,7 @@ class MarketController extends ApiController {
         $request->validate([
             'id' => 'required|numeric',
         ]);
-        
+
         DB::beginTransaction();;
         try {
             $task          = BotTask::find($request->get('id'));
@@ -811,7 +814,7 @@ class MarketController extends ApiController {
             $task->updater = $request->user()->id;
             $task->save();
             $servicesBotTask->stopTask($task);
-            
+
             DB::commit();
             return $this->ok(true);
         } catch (\Exception $e) {
