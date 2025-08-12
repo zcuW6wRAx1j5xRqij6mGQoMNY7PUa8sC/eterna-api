@@ -126,7 +126,6 @@ final class GbmPathService {
             if($price<$low){
                 $price = $low;
             }
-            $price  = max($price, $low);
             // --- - 严格限制最高、最低价 start
 //            switch ($seq) {
 //                case 1:
