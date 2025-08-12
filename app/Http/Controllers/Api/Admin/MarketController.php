@@ -474,7 +474,7 @@ class MarketController extends ApiController {
         $close      = $request->input('close');
         $startTime  = $request->input('start_time');
         $endTime    = $request->input('end_time');
-
+        
         try {
             // 构建查询条件以验证交易对信息
             $where = [

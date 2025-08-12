@@ -11,20 +11,6 @@ use InvalidArgumentException;
 use Illuminate\Support\Carbon;
 
 final class KlineService {
-    /**
-     * 生成满足“区间内运行，且至少各触及一次最大/最小值”的 K 线序列
-     *
-     * @param float                    $startOpen
-     * @param float                    $endClose
-     * @param string|DateTimeInterface $startTime
-     * @param string|DateTimeInterface $endTime
-     * @param float                    $targetHigh
-     * @param float                    $targetLow
-     * @param int                      $intervalMinutes
-     *
-     * @return array<int, array{open:float,high:float,low:float,close:float,volume:int,time:string}>
-     * @throws RandomException
-     */
     public static function generateCandles(
         float                    $startOpen,
         float                    $endClose,
@@ -32,7 +18,9 @@ final class KlineService {
         string|DateTimeInterface $endTime,
         float                    $targetHigh,
         float                    $targetLow,
-        int                      $intervalMinutes = 1
+        int                      $intervalMinutes = 1,
+        float                    $sigma = 0.001,
+        ?int                     $scale = 5,
     ): array
     {
         // ---------- 校验 ----------
@@ -103,7 +91,7 @@ final class KlineService {
         // ----------- 转蜡烛（影线不越界；极值蜡烛只触达一次） -----------
         $candles = [];
         $t       = $start;
-        $n       = \count($prices) - 1;
+        $n       = count($prices) - 1;
         
         // 段间边界索引（便于识别触顶/触底蜡烛）
         $idxTouchHigh = $seg1;                                         // 段1结束处的 close==targetHigh
@@ -143,10 +131,10 @@ final class KlineService {
             }
             
             $candles[] = [
-                'open'      => $open,
-                'high'      => $high,
-                'low'       => $low,
-                'close'     => $close,
+                'open'      => round($open, $scale),
+                'high'      => round($high, $scale),
+                'low'       => round($low, $scale),
+                'close'     => round($close, $scale),
                 'timestamp' => $t->copy()->timestamp * 1000,
             ];
             
