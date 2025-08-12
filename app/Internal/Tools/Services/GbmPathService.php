@@ -59,16 +59,16 @@ final class GbmPathService {
             // 构造价格序列：起始价 + 三段GBM路径
             $prices = [$startOpen];
 
-//            $lo = min($targetLow,  $startOpen, $endClose);
-//            $hi = max($targetHigh, $startOpen, $endClose);
-//
-//            $prices = array_merge($prices, self::rangeBoundSegment($startOpen,  $targetHigh, $seg1, $lo, $hi, $sigma, 3.0));
-//            $prices = array_merge($prices, self::rangeBoundSegment($targetHigh, $targetLow,  $seg2, $lo, $hi, $sigma, 3.0));
-//            $prices = array_merge($prices, self::rangeBoundSegment($targetLow,  $endClose,   $seg3, $lo, $hi, $sigma, 3.0));
+            $lo = min($targetLow,  $startOpen, $endClose);
+            $hi = max($targetHigh, $startOpen, $endClose);
 
-            $prices = array_merge($prices, self::gbmSegment($startOpen, $targetHigh, $seg1, $sigma, 1));
-            $prices = array_merge($prices, self::gbmSegment($targetHigh, $targetLow, $seg2, $sigma, 2));
-            $prices = array_merge($prices, self::gbmSegment($targetLow, $endClose, $seg3, $sigma, 3));
+            $prices = array_merge($prices, self::rangeBoundSegment($startOpen,  $targetHigh, $seg1, $lo, $hi, $sigma, 3.0));
+            $prices = array_merge($prices, self::rangeBoundSegment($targetHigh, $targetLow,  $seg2, $lo, $hi, $sigma, 3.0));
+            $prices = array_merge($prices, self::rangeBoundSegment($targetLow,  $endClose,   $seg3, $lo, $hi, $sigma, 3.0));
+
+//            $prices = array_merge($prices, self::gbmSegment($startOpen, $targetHigh, $seg1, $sigma, 1));
+//            $prices = array_merge($prices, self::gbmSegment($targetHigh, $targetLow, $seg2, $sigma, 2));
+//            $prices = array_merge($prices, self::gbmSegment($targetLow, $endClose, $seg3, $sigma, 3));
 
             // 根据价格序列构造K线数据
             $candles = [];
