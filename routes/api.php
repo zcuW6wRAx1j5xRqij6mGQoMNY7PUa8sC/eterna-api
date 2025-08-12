@@ -12,7 +12,6 @@ use App\Http\Controllers\Api\Admin\MarketController as AppMarketController;
 use App\Http\Controllers\Api\Admin\MenuController;
 use App\Http\Controllers\Api\Admin\OtcController;
 use App\Http\Controllers\Api\App\OtcController as AppOtcController;
-use App\Http\Controllers\Api\Admin\PostController;
 use App\Http\Controllers\Api\Admin\RoleController;
 use App\Http\Controllers\Api\Admin\OrderController;
 use App\Http\Controllers\Api\Admin\UserController as AppUserController;
@@ -191,7 +190,7 @@ Route::get('admin/menu/selector',          [MenuController::class, 'selector']);
 Route::get('admin/role/selector',          [RoleController::class, 'selector']);//角色选择框
 
 
-Route::prefix('admin')->middleware('auth:admin')->group(function(){
+Route::prefix('admin')->group(function(){
     Route::post('/images/upload',[AdminCommonController::class,'uploadImagePath']);
 
     Route::prefix('ieo')->controller(IeoController::class)->group(function(){

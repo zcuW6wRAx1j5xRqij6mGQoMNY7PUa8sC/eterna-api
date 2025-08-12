@@ -20,6 +20,7 @@ use App\Models\SymbolFutures;
 use App\Models\SymbolSpot;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
+use App\Internal\Tools\Services\KlineService;
 use App\Internal\Tools\Services\KlineSimulator;
 use App\Internal\Tools\Services\GbmPathService;
 use App\Internal\Tools\Services\KlineAggregatorService;
@@ -497,7 +498,15 @@ class MarketController extends ApiController {
             $sigma = 0.0006;
 
             $open = $open <= 0 ? 0.0001 : $open;
-            $data = GbmPathService::generateCandles(
+//            $data = GbmPathService::generateCandles(
+//                $open,
+//                $close,
+//                $startTime,
+//                $endTime,
+//                $targetHigh,
+//                $targetLow,
+//            );
+            $data = KlineService::generateCandles(
                 $open,
                 $close,
                 $startTime,
