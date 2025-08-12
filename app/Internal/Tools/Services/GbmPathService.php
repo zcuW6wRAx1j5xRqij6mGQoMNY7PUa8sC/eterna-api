@@ -88,8 +88,8 @@ final class GbmPathService {
 
                 $candles[] = [
                     'open'      => round($open, $scale),
-                    'high'      => min($targetHigh, round($high, $scale)),
-                    'low'       => max($targetLow, round($low, $scale)),
+                    'high'      => round($high, $scale),
+                    'low'       => round($low, $scale),
                     'close'     => round($i == ($n - 1) ? $endClose : $close, $scale),
                     'timestamp' => $time->copy()->timestamp * 1000,
                 ];
