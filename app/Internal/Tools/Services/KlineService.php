@@ -81,7 +81,7 @@ final class KlineService {
             $prices = array_merge($prices, self::monotoneSegment(
                 start: $targetHigh,
                 end: $targetLow,
-                steps: $seg1,
+                steps: $seg2,
                 lowBound: $targetLow,
                 highBound: $targetHigh - $eps,
                 touchEndExactly: true,     // 在段尾精确触达低点
@@ -90,7 +90,7 @@ final class KlineService {
             $prices = array_merge($prices, self::monotoneSegment(
                 start: $startOpen,
                 end: $targetHigh,
-                steps: $seg2,
+                steps: $seg1,
                 lowBound: $targetLow + $eps,
                 highBound: $targetHigh,
                 touchEndExactly: true,     // 在段尾精确触达高点
