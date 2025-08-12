@@ -474,6 +474,7 @@ class MarketController extends ApiController {
         $close      = $request->input('close');
         $startTime  = $request->input('start_time');
         $endTime    = $request->input('end_time');
+        $sigma      = $request->input('sigma', 0.0003);
         
         try {
             // 构建查询条件以验证交易对信息
@@ -494,8 +495,6 @@ class MarketController extends ApiController {
             // 确定开盘价，如果缓存中有数据则使用缓存数据，否则使用默认值
 //            $cache  = (new InfluxDB('market_spot'))->queryKline($symbol, '1m', '-1m');
 //            $open = $cache && isset($cache[0]['c']) ? $cache[0]['c'] : config('kline.default_open');
-            
-            $sigma = 0.0003;
             
             $open = $open <= 0 ? 0.0001 : $open;
             $data = GbmPathService::generateCandles(

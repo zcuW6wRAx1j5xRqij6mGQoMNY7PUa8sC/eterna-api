@@ -11,11 +11,6 @@ use Illuminate\Support\Facades\Log;
 
 final class GbmPathService {
     
-    private static float $open;
-    private static float $close;
-    private static float $targetHigh;
-    private static float $targetLow;
-    
     /**
      * 生成模拟的K线数据（蜡烛图数据）
      *
@@ -49,10 +44,6 @@ final class GbmPathService {
     ): array
     {
         try {
-            self::$open       = $startOpen;
-            self::$close      = $endClose;
-            self::$targetHigh = $targetHigh;
-            self::$targetLow  = $targetLow;
             // 解析开始和结束时间
             $start = Carbon::parse($startTime, config('app.timezone'));
             
@@ -86,9 +77,6 @@ final class GbmPathService {
                 $prices = array_merge($prices, $path2);
                 $prices[count($prices) - 1] = $targetLow;
                 
-                $current = $prices[count($prices) - 1];
-                $path3 = self::gbmSegment($current, $endClose, $seg3, $sigma, $lo, $hi);
-                $prices = array_merge($prices, $path3);
             } else {
                 $path1 = self::gbmSegment($startOpen, $targetLow, $seg1, $sigma, $lo, $hi);
                 $prices = array_merge($prices, $path1);
@@ -99,10 +87,10 @@ final class GbmPathService {
                 $prices = array_merge($prices, $path2);
                 $prices[count($prices) - 1] = $targetHigh;
                 
-                $current = $prices[count($prices) - 1];
-                $path3 = self::gbmSegment($current, $endClose, $seg3, $sigma, $lo, $hi);
-                $prices = array_merge($prices, $path3);
             }
+            $current = $prices[count($prices) - 1];
+            $path3   = self::gbmSegment($current, $endClose, $seg3, $sigma, $lo, $hi);
+            $prices  = array_merge($prices, $path3);
             
             // 确保整体极值命中（如果自然未触及）
             $prices = self::verifyData($prices, $targetHigh, $targetLow);
