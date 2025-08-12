@@ -27,7 +27,6 @@ final class GbmPathService {
      * @param float                    $sigma           波动率参数，用于控制价格波动幅度，默认为0.02
      * @param ?int                     $scale           小数位数，默认为5
      *
-     *
      * @return array 返回一个包含K线数据的数组，每根K线包含 open, high, low, close, volume, time 字段
      */
     public static function generateCandles(
@@ -45,8 +44,8 @@ final class GbmPathService {
         try {
             // 解析开始和结束时间
             $start = Carbon::parse($startTime, config('app.timezone'));
-
             $end = Carbon::parse($endTime, config('app.timezone'));
+
             // 计算总分钟数和总步数
             $totalMinutes = max(0, $end->diffInSeconds($start));
             $steps        = max(3, intdiv(max(1, $totalMinutes), max(1, $intervalSeconds)));
@@ -56,19 +55,15 @@ final class GbmPathService {
             $seg2 = max(1, intdiv($steps, 3));
             $seg3 = max(1, $steps - $seg1 - $seg2);
 
+            // 确定价格边界
+            $minBound = min($targetLow, $startOpen, $endClose);
+            $maxBound = max($targetHigh, $startOpen, $endClose);
+
             // 构造价格序列：起始价 + 三段GBM路径
             $prices = [$startOpen];
-
-//            $lo = min($targetLow,  $startOpen, $endClose);
-//            $hi = max($targetHigh, $startOpen, $endClose);
-//
-//            $prices = array_merge($prices, self::rangeBoundSegment($startOpen,  $targetHigh, $seg1, $lo, $hi, $sigma, 3.0));
-//            $prices = array_merge($prices, self::rangeBoundSegment($targetHigh, $targetLow,  $seg2, $lo, $hi, $sigma, 3.0));
-//            $prices = array_merge($prices, self::rangeBoundSegment($targetLow,  $endClose,   $seg3, $lo, $hi, $sigma, 3.0));
-
-            $prices = array_merge($prices, self::gbmSegment($startOpen, $targetHigh, $seg1, $sigma, 1));
-            $prices = array_merge($prices, self::gbmSegment($targetHigh, $targetLow, $seg2, $sigma, 2));
-            $prices = array_merge($prices, self::gbmSegment($targetLow, $endClose, $seg3, $sigma, 3));
+            $prices = array_merge($prices, self::gbmSegment($startOpen, $targetHigh, $seg1, $sigma, 1, $minBound, $maxBound));
+            $prices = array_merge($prices, self::gbmSegment($targetHigh, $targetLow, $seg2, $sigma, 2, $minBound, $maxBound));
+            $prices = array_merge($prices, self::gbmSegment($targetLow, $endClose, $seg3, $sigma, 3, $minBound, $maxBound));
 
             // 根据价格序列构造K线数据
             $candles = [];
@@ -82,10 +77,6 @@ final class GbmPathService {
                 $close = $prices[$i + 1];
                 $high  = max($open, $close);
                 $low   = min($open, $close);
-
-                // 在高低价上加入随机波动以增强真实性
-//                $high += (random_int(0, 10) / 100) * $sigma * $high;
-//                $low  -= (random_int(0, 10) / 100) * $sigma * $low;
 
                 $candles[] = [
                     'open'      => round($open, $scale),
@@ -104,9 +95,27 @@ final class GbmPathService {
         }
     }
 
-
-    /** 生成带“终点约束”的 GBM 段（对数空间线性引导 + 高斯噪声） */
-    private static function gbmSegment(float $startPrice, float $endPrice, int $steps, float $sigma, int $seq=0): array
+    /**
+     * 生成带"终点约束"的 GBM 段（对数空间线性引导 + 高斯噪声）
+     *
+     * @param float $startPrice 起始价格
+     * @param float $endPrice 结束价格
+     * @param int $steps 步数
+     * @param float $sigma 波动率
+     * @param int $seq 序列标识(1:上涨段,2:下跌段,3:结束段)
+     * @param float|null $minBound 最小价格边界
+     * @param float|null $maxBound 最大价格边界
+     * @return array 价格路径数组
+     */
+    private static function gbmSegment(
+        float $startPrice,
+        float $endPrice,
+        int $steps,
+        float $sigma,
+        int $seq = 0,
+        ?float $minBound = null,
+        ?float $maxBound = null
+    ): array
     {
         $path     = [];
         $logStart = log(max($startPrice, 1e-8));
@@ -119,29 +128,38 @@ final class GbmPathService {
             $logStart  += $drift + $noise;
 
             // 价格保持正
-            $price  = max(0.0001, exp($logStart));
-            // --- - 严格限制最高、最低价 start
+            $price = max(0.0001, exp($logStart));
+
+            // 严格限制价格在[minBound, maxBound]范围内
+            if ($minBound !== null) {
+                $price = max($price, $minBound);
+            }
+            if ($maxBound !== null) {
+                $price = min($price, $maxBound);
+            }
+
+            // 序列限制逻辑
             switch ($seq) {
-                case 1:
-                    if($price>$endPrice){
+                case 1: // 上涨段：不允许超过目标高点
+                    if($price > $endPrice) {
                         $price = $endPrice;
                     }
                     break;
-                case 2:
-                    if($price>$startPrice){
+                case 2: // 下跌段：不允许超过起点或低于目标低点
+                    if($price > $startPrice) {
                         $price = $startPrice;
                     }
-                    if($price<$endPrice){
+                    if($price < $endPrice) {
                         $price = $endPrice;
                     }
                     break;
-                case 3:
-                    if($price<$startPrice){
+                case 3: // 结束段：不允许低于起点
+                    if($price < $startPrice) {
                         $price = $startPrice;
                     }
                     break;
             }
-            // --- - 严格限制最高、最低价 end
+
             $path[] = $price;
         }
         return $path;
@@ -162,7 +180,7 @@ final class GbmPathService {
         int   $steps,
         float $low,
         float $high,
-        float $sigma = 0.02,   // 噪声强度（区间内的“抖动”）
+        float $sigma = 0.02,   // 噪声强度（区间内的"抖动"）
         float $kappa = 3.0     // 回复强度（越大越贴近目标与中线，波动更温和）
     ): array
     {
@@ -215,5 +233,4 @@ final class GbmPathService {
         }
         return $path;
     }
-
 }
