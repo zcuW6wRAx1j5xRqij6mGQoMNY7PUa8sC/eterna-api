@@ -129,15 +129,15 @@ final class GbmPathService {
                     break;
                 case 2:
                     if($price>$startPrice){
-                        $price = $endPrice;
+                        $price = $startPrice;
                     }
                     if($price<$endPrice){
-                        $price = $startPrice;
+                        $price = $endPrice;
                     }
                     break;
                 case 3:
                     if($price<$startPrice){
-                        $price = $endPrice;
+                        $price = $startPrice;
                     }
                     break;
             }
