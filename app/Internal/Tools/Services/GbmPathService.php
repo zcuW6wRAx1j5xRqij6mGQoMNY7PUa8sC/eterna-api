@@ -59,16 +59,15 @@ final class GbmPathService {
             // 构造价格序列：起始价 + 三段GBM路径
             $prices = [$startOpen];
 
-            $lo = min($targetLow,  $startOpen, $endClose);
-            $hi = max($targetHigh, $startOpen, $endClose);
+//            $lo = min($targetLow,  $startOpen, $endClose);
+//            $hi = max($targetHigh, $startOpen, $endClose);
+//            $prices = array_merge($prices, self::rangeBoundSegment($startOpen,  $targetHigh, $seg1, $lo, $hi, $sigma, 3.0));
+//            $prices = array_merge($prices, self::rangeBoundSegment($targetHigh, $targetLow,  $seg2, $lo, $hi, $sigma, 3.0));
+//            $prices = array_merge($prices, self::rangeBoundSegment($targetLow,  $endClose,   $seg3, $lo, $hi, $sigma, 3.0));
 
-            $prices = array_merge($prices, self::rangeBoundSegment($startOpen,  $targetHigh, $seg1, $lo, $hi, $sigma, 3.0));
-            $prices = array_merge($prices, self::rangeBoundSegment($targetHigh, $targetLow,  $seg2, $lo, $hi, $sigma, 3.0));
-            $prices = array_merge($prices, self::rangeBoundSegment($targetLow,  $endClose,   $seg3, $lo, $hi, $sigma, 3.0));
-
-//            $prices = array_merge($prices, self::gbmSegment($startOpen, $targetHigh, $seg1, $sigma, 1));
-//            $prices = array_merge($prices, self::gbmSegment($targetHigh, $targetLow, $seg2, $sigma, 2));
-//            $prices = array_merge($prices, self::gbmSegment($targetLow, $endClose, $seg3, $sigma, 3));
+            $prices = array_merge($prices, self::gbmSegment($startOpen, $targetHigh, $seg1, $sigma, 1));
+            $prices = array_merge($prices, self::gbmSegment($targetHigh, $targetLow, $seg2, $sigma, 2));
+            $prices = array_merge($prices, self::gbmSegment($targetLow, $endClose, $seg3, $sigma, 3));
 
             // 根据价格序列构造K线数据
             $candles = [];
@@ -89,8 +88,8 @@ final class GbmPathService {
 
                 $candles[] = [
                     'open'      => round($open, $scale),
-                    'high'      => round($high, $scale),
-                    'low'       => round($low, $scale),
+                    'high'      => min($targetHigh, round($high, $scale)),
+                    'low'       => max($targetLow, round($low, $scale)),
                     'close'     => round($i == ($n - 1) ? $endClose : $close, $scale),
                     'timestamp' => $time->copy()->timestamp * 1000,
                 ];
