@@ -54,27 +54,49 @@ final class KlineService {
         $prices   = [];
         $prices[] = $startOpen;
         
-        // 段1：单调上行到 targetHigh，最后一点==targetHigh，其余 < targetHigh
-        $prices = array_merge($prices, self::monotoneSegment(
-            start: $startOpen,
-            end: $targetHigh,
-            steps: $seg1,
-            lowBound: $targetLow + $eps,
-            highBound: $targetHigh,
-            touchEndExactly: true,     // 在段尾精确触达高点
-            keepInteriorOpen: true     // 内部严格小于 high
-        ));
-        
-        // 段2：单调下行到 targetLow，最后一点==targetLow，其余 > targetLow
-        $prices = array_merge($prices, self::monotoneSegment(
-            start: $targetHigh,
-            end: $targetLow,
-            steps: $seg2,
-            lowBound: $targetLow,
-            highBound: $targetHigh - $eps,
-            touchEndExactly: true,     // 在段尾精确触达低点
-            keepInteriorOpen: true     // 内部严格大于 low
-        ));
+        $upOrDown = rand(0, 1);
+        if($upOrDown) {
+            // 段1：单调上行到 targetHigh，最后一点==targetHigh，其余 < targetHigh
+            $prices = array_merge($prices, self::monotoneSegment(
+                start: $startOpen,
+                end: $targetHigh,
+                steps: $seg1,
+                lowBound: $targetLow + $eps,
+                highBound: $targetHigh,
+                touchEndExactly: true,     // 在段尾精确触达高点
+                keepInteriorOpen: true     // 内部严格小于 high
+            ));
+            
+            // 段2：单调下行到 targetLow，最后一点==targetLow，其余 > targetLow
+            $prices = array_merge($prices, self::monotoneSegment(
+                start: $targetHigh,
+                end: $targetLow,
+                steps: $seg2,
+                lowBound: $targetLow,
+                highBound: $targetHigh - $eps,
+                touchEndExactly: true,     // 在段尾精确触达低点
+                keepInteriorOpen: true     // 内部严格大于 low
+            ));
+        }else{
+            $prices = array_merge($prices, self::monotoneSegment(
+                start: $targetHigh,
+                end: $targetLow,
+                steps: $seg2,
+                lowBound: $targetLow,
+                highBound: $targetHigh - $eps,
+                touchEndExactly: true,     // 在段尾精确触达低点
+                keepInteriorOpen: true     // 内部严格大于 low
+            ));
+            $prices = array_merge($prices, self::monotoneSegment(
+                start: $startOpen,
+                end: $targetHigh,
+                steps: $seg1,
+                lowBound: $targetLow + $eps,
+                highBound: $targetHigh,
+                touchEndExactly: true,     // 在段尾精确触达高点
+                keepInteriorOpen: true     // 内部严格小于 high
+            ));
+        }
         
         // 段3：从低点到终点，保持在开区间 (low, high)，不再触及边界
         $endTarget = self::clampOpen($endClose, $targetLow, $targetHigh, $eps);
