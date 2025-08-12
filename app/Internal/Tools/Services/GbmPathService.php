@@ -80,10 +80,6 @@ final class GbmPathService {
             $candles = [];
             $time    = $start;
             for ($i = 0, $n = count($prices) - 1; $i < $n; $i++) {
-                if ($i == 0) {
-                    Log::info('时区：' . config('app.timezone'));
-                    Log::info('机器人任务开始时间：' . $time->copy()->timestamp . '【' . $time->copy()->toDateTimeString() . '】');
-                }
                 $open  = $prices[$i];
                 $close = $prices[$i + 1];
                 $high  = max($open, $close);

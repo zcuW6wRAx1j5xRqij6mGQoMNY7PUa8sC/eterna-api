@@ -539,7 +539,7 @@ class MarketController extends ApiController {
             // 返回成功响应，包含模拟的K线图数据
             $candles = $candles[$interval];
             $minutes = count($candles);
-            return $this->ok(['duration' => $minutes, 'candles' => $candles]);
+            return $this->ok(['duration' => $minutes, 'candles' => $data]);
         } catch (\Exception $e) {
             // 捕获异常，记录错误日志并返回错误响应
             Log::error(sprintf('PreView Kline Error: %s(%s): %s', $e->getFile(), $e->getLine(), $e->getMessage()));
