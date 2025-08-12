@@ -11,6 +11,11 @@ use Illuminate\Support\Facades\Log;
 
 final class GbmPathService {
     
+    private static $open;
+    private static $close;
+    private static $targetHigh;
+    private static $targetLow;
+    
     /**
      * 生成模拟的K线数据（蜡烛图数据）
      *
@@ -44,6 +49,10 @@ final class GbmPathService {
     ): array
     {
         try {
+            self::$open       = $startOpen;
+            self::$close      = $endClose;
+            self::$targetHigh = $targetHigh;
+            self::$targetLow  = $targetLow;
             // 解析开始和结束时间
             $start = Carbon::parse($startTime, config('app.timezone'));
             
@@ -123,24 +132,16 @@ final class GbmPathService {
             // 价格保持正
             $price = max(0.0001, exp($logStart));
             if ($direction) {
-                if ($price < $startPrice) {
-                    $price = $startPrice + ($startPrice - $price);
-                } else if ($i) {
-                    if ($path[$i - 1] == $endPrice && $price > $endPrice) {
-                        $price = $endPrice + ($price - $endPrice);
-                    } else if ($path[$i - 1] < $endPrice && $price > $endPrice) {
-                        $price = $endPrice;
-                    }
+                if ($price < self::$targetLow) {
+                    $price = self::$targetLow;
+                } else if ($price > self::$targetHigh) {
+                    $price = self::$targetHigh;
                 }
             } else {
-                if ($price > $startPrice) {
-                    $price = $startPrice - ($price - $startPrice);
-                } else if ($i) {
-                    if ($path[$i - 1] == $endPrice && $price < $endPrice) {
-                        $price = $endPrice + ($endPrice - $price);
-                    } else if ($path[$i - 1] > $endPrice && $price < $endPrice) {
-                        $price = $endPrice;
-                    }
+                if ($price > self::$targetHigh) {
+                    $price = self::$targetHigh;
+                } else if ($price < self::$targetLow) {
+                    $price = self::$targetLow;
                 }
             }
             $path[] = $price;
