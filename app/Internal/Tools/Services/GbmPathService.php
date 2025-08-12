@@ -121,26 +121,26 @@ final class GbmPathService {
             // 价格保持正
             $price  = max(0.0001, exp($logStart));
             // --- - 严格限制最高、最低价 start
-            switch ($seq) {
-                case 1:
-                    if($price>$endPrice){
-                        $price = $endPrice;
-                    }
-                    break;
-                case 2:
-                    if($price>$startPrice){
-                        $price = $startPrice;
-                    }
-                    if($price<$endPrice){
-                        $price = $endPrice;
-                    }
-                    break;
-                case 3:
-                    if($price<$startPrice){
-                        $price = $startPrice;
-                    }
-                    break;
-            }
+//            switch ($seq) {
+//                case 1:
+//                    if($price>$endPrice){
+//                        $price = $endPrice;
+//                    }
+//                    break;
+//                case 2:
+//                    if($price>$startPrice){
+//                        $price = $startPrice;
+//                    }
+//                    if($price<$endPrice){
+//                        $price = $endPrice;
+//                    }
+//                    break;
+//                case 3:
+//                    if($price<$startPrice){
+//                        $price = $startPrice;
+//                    }
+//                    break;
+//            }
             // --- - 严格限制最高、最低价 end
             $path[] = $price;
         }
