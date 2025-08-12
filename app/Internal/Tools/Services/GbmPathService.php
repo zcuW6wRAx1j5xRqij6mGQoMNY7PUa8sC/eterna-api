@@ -11,10 +11,10 @@ use Illuminate\Support\Facades\Log;
 
 final class GbmPathService {
     
-    private static $open;
-    private static $close;
-    private static $targetHigh;
-    private static $targetLow;
+    private static float $open;
+    private static float $close;
+    private static float $targetHigh;
+    private static float $targetLow;
     
     /**
      * 生成模拟的K线数据（蜡烛图数据）
@@ -43,7 +43,7 @@ final class GbmPathService {
         string|DateTimeInterface $endTime,
         float                    $targetHigh,
         float                    $targetLow,
-        float                    $sigma = 0.001,
+        float                    $sigma = 0.005, // Increased default for more natural fluctuations
         int                      $intervalSeconds = 1,
         ?int                     $scale = 5,
     ): array
@@ -66,26 +66,47 @@ final class GbmPathService {
             $seg2 = max(1, intdiv($steps, 3));
             $seg3 = max(1, $steps - $seg1 - $seg2);
             
+            // 定义边界，确保包容所有点
+            $lo = min($targetLow, $startOpen, $endClose);
+            $hi = max($targetHigh, $startOpen, $endClose);
+            
             // 构造价格序列：起始价 + 三段GBM路径
             $prices = [$startOpen];
-
-//            $lo = min($targetLow, $startOpen, $endClose);
-//            $hi = max($targetHigh, $startOpen, $endClose);
-
-//            $prices = array_merge($prices, self::rangeBoundSegment($startOpen,  $targetHigh, $seg1, $lo, $hi, $sigma, 3.0));
-//            $prices = array_merge($prices, self::rangeBoundSegment($targetHigh, $targetLow,  $seg2, $lo, $hi, $sigma, 3.0));
-//            $prices = array_merge($prices, self::rangeBoundSegment($targetLow,  $endClose,   $seg3, $lo, $hi, $sigma, 3.0));
+            
+            // 随机选择先到 high 或 low
             $upOrLow = rand(0, 1);
+            
             if ($upOrLow) {
-                $prices = array_merge($prices, self::gbmSegment($startOpen, $targetHigh, $seg1, $sigma));
-                $prices = array_merge($prices, self::gbmSegment($targetHigh, $targetLow, $seg2, $sigma, 0));
-                $prices = array_merge($prices, self::gbmSegment($targetLow, $endClose, $seg3, $sigma));
+                $path1 = self::gbmSegment($startOpen, $targetHigh, $seg1, $sigma, $lo, $hi);
+                $prices = array_merge($prices, $path1);
+                $prices[count($prices) - 1] = $targetHigh; // 强制段末命中目标
+                
+                $current = $prices[count($prices) - 1];
+                $path2 = self::gbmSegment($current, $targetLow, $seg2, $sigma, $lo, $hi);
+                $prices = array_merge($prices, $path2);
+                $prices[count($prices) - 1] = $targetLow;
+                
+                $current = $prices[count($prices) - 1];
+                $path3 = self::gbmSegment($current, $endClose, $seg3, $sigma, $lo, $hi);
+                $prices = array_merge($prices, $path3);
             } else {
-                $prices = array_merge($prices, self::gbmSegment($startOpen, $targetLow, $seg1, $sigma, 0));
-                $prices = array_merge($prices, self::gbmSegment($targetLow, $targetHigh, $seg2, $sigma));
-                $prices = array_merge($prices, self::gbmSegment($targetHigh, $endClose, $seg3, $sigma, 0));
+                $path1 = self::gbmSegment($startOpen, $targetLow, $seg1, $sigma, $lo, $hi);
+                $prices = array_merge($prices, $path1);
+                $prices[count($prices) - 1] = $targetLow;
+                
+                $current = $prices[count($prices) - 1];
+                $path2 = self::gbmSegment($current, $targetHigh, $seg2, $sigma, $lo, $hi);
+                $prices = array_merge($prices, $path2);
+                $prices[count($prices) - 1] = $targetHigh;
+                
+                $current = $prices[count($prices) - 1];
+                $path3 = self::gbmSegment($current, $endClose, $seg3, $sigma, $lo, $hi);
+                $prices = array_merge($prices, $path3);
             }
+            
+            // 确保整体极值命中（如果自然未触及）
             $prices = self::verifyData($prices, $targetHigh, $targetLow);
+            
             // 根据价格序列构造K线数据
             $candles = [];
             $time    = $start;
@@ -95,10 +116,11 @@ final class GbmPathService {
                 $high  = max($open, $close);
                 $low   = min($open, $close);
                 
-                // 在高低价上加入随机波动以增强真实性
-//                $high      += (random_int(0, 10) / 100) * $sigma * $high;
-//                $low       -= (random_int(0, 10) / 100) * $sigma * $low;
-                // 格式化成 $scale 小数
+                // 在高低价上加入随机波动以增强真实性（可选，启用后需夹紧边界）
+                // $high += (random_int(0, 10) / 100) * $sigma * $high;
+                // $low -= (random_int(0, 10) / 100) * $sigma * $low;
+                // $high = min($hi, max($high, $lo));
+                // $low = max($lo, min($low, $hi));
                 
                 $candles[] = [
                     'open'      => number_format($open, $scale),
@@ -116,12 +138,14 @@ final class GbmPathService {
     }
     
     
-    /** 生成带“终点约束”的 GBM 段（对数空间线性引导 + 高斯噪声） */
-    private static function gbmSegment(float $startPrice, float $endPrice, int $steps, float $sigma, int $direction = 1): array
+    /** 生成带“终点约束”和边界反射的 GBM 段（对数空间线性引导 + 高斯噪声 + 反射） */
+    private static function gbmSegment(float $startPrice, float $endPrice, int $steps, float $sigma, float $low, float $high): array
     {
         $path     = [];
         $logStart = log(max($startPrice, 1e-8));
         $logEnd   = log(max($endPrice, 1e-8));
+        $logLow   = log(max($low, 1e-8));
+        $logHigh  = log(max($high, 1e-8));
         
         for ($i = 0; $i < $steps; $i++) {
             $remaining = $steps - $i;
@@ -129,21 +153,16 @@ final class GbmPathService {
             $noise     = $sigma * self::randn();                     // 高斯扰动
             $logStart  += $drift + $noise;
             
+            // 反射以保持在边界内
+            if ($logStart < $logLow) {
+                $logStart = 2 * $logLow - $logStart;
+            }
+            if ($logStart > $logHigh) {
+                $logStart = 2 * $logHigh - $logStart;
+            }
+            
             // 价格保持正
             $price = max(0.0001, exp($logStart));
-            if ($direction) {
-                if ($price < self::$targetLow) {
-                    $price = self::$targetLow;
-                } else if ($price > self::$targetHigh) {
-                    $price = self::$targetHigh;
-                }
-            } else {
-                if ($price > self::$targetHigh) {
-                    $price = self::$targetHigh;
-                } else if ($price < self::$targetLow) {
-                    $price = self::$targetLow;
-                }
-            }
             $path[] = $price;
         }
         return $path;
@@ -157,67 +176,7 @@ final class GbmPathService {
         return sqrt(-2.0 * log($u1)) * cos(2.0 * M_PI * $u2);
     }
     
-    /** 有界 OU 段（logit 变换 + 终点引导 + 桥形降波），保证价格在 [low, high] 徘徊 */
-    private static function rangeBoundSegment(
-        float $startPrice,
-        float $endPrice,
-        int   $steps,
-        float $low,
-        float $high,
-        float $sigma = 0.0001,   // 噪声强度（区间内的“抖动”）
-        float $kappa = 3.0     // 回复强度（越大越贴近目标与中线，波动更温和）
-    ): array
-    {
-        $eps = 1e-6;
-        if ($low > $high) {
-            [$low, $high] = [$high, $low];
-        }
-        $w = max($high - $low, $eps);
-        
-        // 规范化到 (0,1)，再做 logit
-        $toX   = function (float $p) use ($low, $w, $eps): float {
-            return min(max(($p - $low) / $w, $eps), 1.0 - $eps);
-        };
-        $logit = fn(float $x): float => log($x / (1.0 - $x));
-        $sigm  = fn(float $z): float => 1.0 / (1.0 + exp(-$z));
-        
-        $x0   = $toX($startPrice);
-        $xT   = $toX($endPrice);
-        $z    = $logit($x0);
-        $zEnd = $logit($xT);
-        
-        $path = [];
-        $dt   = 1.0 / max(1, $steps);
-        
-        for ($i = 1; $i <= $steps; $i++) {
-            $t = $i / $steps;
-            
-            // 终点引导：z 在 [z, zEnd] 间线性过渡
-            $guide = (1.0 - $t) * $z + $t * $zEnd;
-            
-            // OU 风格的回复（对 guide 与中线都有回拉效果）
-            $alpha = exp(-$kappa * $dt);
-            $zMean = $alpha * $z + (1.0 - $alpha) * $guide;
-            
-            // 桥形波动：中间大、两端小；步数越多，每步噪声越小
-            $bridgeShape = max(1e-6, sqrt($t * (1.0 - $t)));
-            $z           = $zMean + $sigma * sqrt($dt) * $bridgeShape * self::randn();
-            
-            // 映射回价格并做稳妥裁剪
-            $x = $sigm($z);
-            $p = $low + $w * $x;
-            if ($p <= $low) {
-                $p = $low + 1e-6;
-            }
-            if ($p >= $high) {
-                $p = $high - 1e-6;
-            }
-            
-            $path[] = $p;
-        }
-        return $path;
-    }
-    
+    // rangeBoundSegment 可以保留但未使用，因为反射 GBM 更适合
     
     private static function verifyData(array $data, float $high, float $low): array
     {
