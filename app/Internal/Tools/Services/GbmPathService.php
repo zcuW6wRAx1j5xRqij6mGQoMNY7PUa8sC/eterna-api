@@ -217,9 +217,9 @@ final class GbmPathService {
             if ($item['low'] < $min) {
                 if ($item['low'] <= $low) {
                     $data[$i]['low'] = $low;
-                    if ($item['high'] == $item['close']) {
+                    if ($item['low'] == $item['close']) {
                         $data[$i]['close'] = $low;
-                    } else if ($item['high'] == $item['open']) {
+                    } else if ($item['low'] == $item['open']) {
                         $data[$i]['open'] = $low;
                     }
                     $min = $low;
