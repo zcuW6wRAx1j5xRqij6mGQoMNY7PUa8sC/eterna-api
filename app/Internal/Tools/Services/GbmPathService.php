@@ -193,62 +193,50 @@ final class GbmPathService {
     }
     
     
-    /**
-     * 验证并调整生成的K线数据，确保达到指定的最高价和最低价
-     *
-     * @param array $data K线数据数组
-     * @param float $high 目标最高价
-     * @param float $low  目标最低价
-     *
-     * @return array 调整后的K线数据
-     */
     private static function verifyData(array $data, float $high, float $low): array
     {
-        if (empty($data)) {
-            return $data;
-        }
-        
-        $highIndex  = 0;
-        $lowIndex   = 0;
-        $currentMax = $data[0]['high'];
-        $currentMin = $data[0]['low'];
-        
-        // 查找实际的最高点和最低点
+        $highIndex = $lowIndex = 0;
+        $max       = $data[0]['high'];
+        $min       = $data[0]['low'];
         foreach ($data as $i => $item) {
-            // 更新最高点信息
-            if ($item['high'] > $currentMax) {
-                $currentMax = $item['high'];
-                $highIndex  = $i;
+            if ($item['high'] > $max) {
+                if ($item['high'] >= $high) {
+                    $data[$i]['high'] = $high;
+                    if ($item['high'] == $item['close']) {
+                        $data[$i]['close'] = $high;
+                    } else if ($item['high'] == $item['open']) {
+                        $data[$i]['open'] = $high;
+                    }
+                    $max = $high;
+                } else {
+                    $max       = $item['high'];
+                    $highIndex = $i;
+                }
+                
             }
-            
-            // 更新最低点信息
-            if ($item['low'] < $currentMin) {
-                $currentMin = $item['low'];
-                $lowIndex   = $i;
+            if ($item['low'] < $min) {
+                if ($item['low'] <= $low) {
+                    $data[$i]['low'] = $low;
+                    if ($item['high'] == $item['close']) {
+                        $data[$i]['close'] = $low;
+                    } else if ($item['high'] == $item['open']) {
+                        $data[$i]['open'] = $low;
+                    }
+                    $min = $low;
+                } else {
+                    $min      = $item['low'];
+                    $lowIndex = $i;
+                }
             }
         }
-        
-        // 确保最高价达到目标值
-        if ($currentMax < $high) {
+        if ($max != $high) {
             $data[$highIndex]['high'] = $high;
-            // 如果high和low在同一根K线，需要同时调整open和close
-            if ($highIndex === $lowIndex) {
-                $data[$highIndex]['open']  = min($data[$highIndex]['open'], $low);
-                $data[$highIndex]['close'] = $high;
-            }
+            $data[$lowIndex]['close'] = $high;
         }
-        
-        // 确保最低价达到目标值
-        if ($currentMin > $low) {
-            $data[$lowIndex]['low'] = $low;
-            // 如果high和low在同一根K线，需要同时调整open和close
-            if ($highIndex === $lowIndex) {
-                $data[$lowIndex]['open']  = $low;
-                $data[$lowIndex]['close'] = max($data[$lowIndex]['close'], $high);
-            }
+        if ($min != $low) {
+            $data[$lowIndex]['low']   = $low;
+            $data[$highIndex]['open'] = $low;
         }
-        
         return $data;
     }
-    
 }
