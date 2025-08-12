@@ -65,10 +65,17 @@ final class GbmPathService {
 //            $prices = array_merge($prices, self::rangeBoundSegment($startOpen,  $targetHigh, $seg1, $lo, $hi, $sigma, 3.0));
 //            $prices = array_merge($prices, self::rangeBoundSegment($targetHigh, $targetLow,  $seg2, $lo, $hi, $sigma, 3.0));
 //            $prices = array_merge($prices, self::rangeBoundSegment($targetLow,  $endClose,   $seg3, $lo, $hi, $sigma, 3.0));
-            
-            $prices = array_merge($prices, self::gbmSegment($startOpen, $targetHigh, $seg1, $sigma));
-            $prices = array_merge($prices, self::gbmSegment($targetHigh, $targetLow, $seg2, $sigma));
-            $prices = array_merge($prices, self::gbmSegment($targetLow, $endClose, $seg3, $sigma));
+            $upOrLow = rand(0, 1);
+            if ($upOrLow) {
+                $prices = array_merge($prices, self::gbmSegment($startOpen, $targetHigh, $seg1, $sigma));
+                $prices = array_merge($prices, self::gbmSegment($targetHigh, $targetLow, $seg2, $sigma, 0));
+                $prices = array_merge($prices, self::gbmSegment($targetLow, $endClose, $seg3, $sigma));
+            } else {
+                $prices = array_merge($prices, self::gbmSegment($startOpen, $targetLow, $seg1, $sigma, 0));
+                $prices = array_merge($prices, self::gbmSegment($targetLow, $targetHigh, $seg2, $sigma));
+                $prices = array_merge($prices, self::gbmSegment($targetHigh, $endClose, $seg3, $sigma, 0));
+            }
+            $prices = self::verifyData($prices, $targetHigh, $targetLow);
             
             // 根据价格序列构造K线数据
             $candles = [];
@@ -95,8 +102,7 @@ final class GbmPathService {
                 ];
                 $time      = $time->addSeconds($intervalSeconds);
             }
-            
-            return self::verifyData($candles, $targetHigh, $targetLow);
+            return $candles;
         } catch (RandomException $e) {
             return [];
         }
@@ -104,7 +110,7 @@ final class GbmPathService {
     
     
     /** 生成带“终点约束”的 GBM 段（对数空间线性引导 + 高斯噪声） */
-    private static function gbmSegment(float $startPrice, float $endPrice, int $steps, float $sigma): array
+    private static function gbmSegment(float $startPrice, float $endPrice, int $steps, float $sigma, int $direction = 1): array
     {
         $path     = [];
         $logStart = log(max($startPrice, 1e-8));
@@ -117,7 +123,12 @@ final class GbmPathService {
             $logStart  += $drift + $noise;
             
             // 价格保持正
-            $price  = max(0.0001, exp($logStart));
+            $price = max(0.0001, exp($logStart));
+            if ($direction) {
+                $price = min($price, $endPrice);
+            } else {
+                $price = max($endPrice, $price);
+            }
             $path[] = $price;
         }
         return $path;
@@ -195,47 +206,25 @@ final class GbmPathService {
     
     private static function verifyData(array $data, float $high, float $low): array
     {
-        $highIndex = $lowIndex = 0;
-        $max       = $data[0]['high'];
-        $min       = $data[0]['low'];
-        foreach ($data as $i => $item) {
-            if ($item['high'] > $max) {
-                if ($item['high'] >= $high) {
-                    $data[$i]['high'] = $high;
-                    if ($item['high'] == $item['close']) {
-                        $data[$i]['close'] = $high;
-                    } else if ($item['high'] == $item['open']) {
-                        $data[$i]['open'] = $high;
-                    }
-                    $max = $high;
-                } else {
-                    $max       = $item['high'];
-                    $highIndex = $i;
-                }
-                
+        $max       = $data[0];
+        $min       = $data[0];
+        $highIndex = 0;
+        $lowIndex  = 0;
+        foreach ($data as $i => $price) {
+            if ($price > $max) {
+                $max       = $price;
+                $highIndex = $i;
             }
-            if ($item['low'] < $min) {
-                if ($item['low'] <= $low) {
-                    $data[$i]['low'] = $low;
-                    if ($item['low'] == $item['close']) {
-                        $data[$i]['close'] = $low;
-                    } else if ($item['low'] == $item['open']) {
-                        $data[$i]['open'] = $low;
-                    }
-                    $min = $low;
-                } else {
-                    $min      = $item['low'];
-                    $lowIndex = $i;
-                }
+            if ($price < $min) {
+                $min      = $price;
+                $lowIndex = $i;
             }
         }
-        if ($max != $high) {
-            $data[$highIndex]['high'] = $high;
-            $data[$lowIndex]['close'] = $high;
+        if ($max < $high) {
+            $data[$highIndex] = $high;
         }
-        if ($min != $low) {
-            $data[$lowIndex]['low']   = $low;
-            $data[$highIndex]['open'] = $low;
+        if ($min > $low) {
+            $data[$lowIndex] = $low;
         }
         return $data;
     }
