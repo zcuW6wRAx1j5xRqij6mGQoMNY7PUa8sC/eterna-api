@@ -77,7 +77,6 @@ final class GbmPathService {
                 $prices = array_merge($prices, self::gbmSegment($targetHigh, $endClose, $seg3, $sigma, 0));
             }
             $prices = self::verifyData($prices, $targetHigh, $targetLow);
-            dd($prices);
             // 根据价格序列构造K线数据
             $candles = [];
             $time    = $start;
