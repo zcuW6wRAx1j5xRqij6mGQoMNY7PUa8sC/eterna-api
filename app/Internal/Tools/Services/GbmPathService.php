@@ -67,7 +67,7 @@ final class GbmPathService {
 //            $prices = array_merge($prices, self::rangeBoundSegment($targetLow,  $endClose,   $seg3, $lo, $hi, $sigma, 3.0));
 
             $prices = array_merge($prices, self::gbmSegment($startOpen, $targetHigh, $seg1, $sigma, 1));
-            $prices = array_merge($prices, self::gbmSegment($targetHigh, $targetLow, $seg2, $sigma, 1));
+            $prices = array_merge($prices, self::gbmSegment($targetHigh, $targetLow, $seg2, $sigma, 2));
             $prices = array_merge($prices, self::gbmSegment($targetLow, $endClose, $seg3, $sigma, 3));
 
             // 根据价格序列构造K线数据
