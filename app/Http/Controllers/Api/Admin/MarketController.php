@@ -522,7 +522,7 @@ class MarketController extends ApiController {
             $taskKey = sprintf(config('kline.preview_task_key'), $uid, $symbol);
             $task    = [
                 'symbol_id'   => $coinID,
-                // 'symbol_type' => $coinType,
+                'symbol_type' => 'spot',
                 'open'        => $open,
                 'high'        => $targetHigh,
                 'low'         => $targetLow,

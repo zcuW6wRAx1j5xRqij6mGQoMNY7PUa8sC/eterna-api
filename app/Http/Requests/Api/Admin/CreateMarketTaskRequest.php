@@ -25,7 +25,7 @@ class CreateMarketTaskRequest extends FormRequest {
     {
         return [
             'coin_id'    => 'required|exists:symbols,id',
-            'coin_type'  => 'required|in:spot,futures',
+            // 'coin_type'  => 'required|in:spot,futures',
             'open'       => 'required|decimal:0,5',
             'close'      => 'required|decimal:0,5',
             'high'       => 'required|decimal:0,5',
