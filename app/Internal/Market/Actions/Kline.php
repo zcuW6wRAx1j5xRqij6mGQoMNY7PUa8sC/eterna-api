@@ -22,7 +22,7 @@ class Kline {
 
     public function __invoke(Request $request)
     {
-        $symbolType = $request->get('symbol_type');
+        $symbolType = SymbolEnums::SymbolTypeSpot; //$request->get('symbol_type');
         $interval = $request->get('interval');
         $symbolId = $request->get('symbol_id');
 
@@ -50,6 +50,7 @@ class Kline {
      * @return mixed 
      */
     public function allSymbolSimpleKline(string $symbolType, array $symbolIds) {
+        $symbolType == SymbolEnums::SymbolTypeSpot;
         $data = Cache::remember(sprintf(self::CacheKeyAllSymbols,$symbolType),self::CacheKeyAllSymbolsTTL,function() use($symbolType){
             $bucket = MarketEnums::FuturesInfluxdbBucket;
             $symbols = [];
