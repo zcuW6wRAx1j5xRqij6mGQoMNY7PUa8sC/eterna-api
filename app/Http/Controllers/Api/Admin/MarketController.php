@@ -116,7 +116,7 @@ class MarketController extends ApiController {
     public function fakePrice(Request $request)
     {
         $request->validate([
-            'symbol_type' => ['nullable', Rule::in([SymbolEnums::SymbolTypeFutures, SymbolEnums::SymbolTypeSpot])],
+            // 'symbol_type' => ['nullable', Rule::in([SymbolEnums::SymbolTypeFutures, SymbolEnums::SymbolTypeSpot])],
             'symbol'      => 'nullable|string',
         ]);
         
