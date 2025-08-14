@@ -10,7 +10,7 @@ class FetchSymbolFuturesQuote {
 
     public function __invoke(string $symbol)
     {
-        return RedisMarket()->get(sprintf(MarketEnums::FuturesSymbolQuoteCacheKey, strtolower($symbol)));
+        return RedisMarket()->get(sprintf(MarketEnums::SpotSymbolQuoteCacheKey, strtolower($symbol)));
     }
 
     // 获取所有报价
@@ -28,7 +28,7 @@ class FetchSymbolFuturesQuote {
         $redis = RedisMarket();
         $data = $redis->pipeline(function($pipe) use($keys){
             foreach ($keys as $key) {
-                $pipe->get(sprintf(MarketEnums::FuturesSymbolQuoteCacheKey, $key));
+                $pipe->get(sprintf(MarketEnums::SpotSymbolQuoteCacheKey, $key));
             }
         });
         $symbolQuotes = [];
