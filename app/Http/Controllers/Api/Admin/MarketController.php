@@ -467,7 +467,7 @@ class MarketController extends ApiController {
     {
         // 从请求中获取参数
         $coinID     = $request->input('coin_id');
-        $coinType   = $request->input('coin_type');
+        // $coinType   = $request->input('coin_type');
         $open       = $request->input('open', 0);
         $targetHigh = $request->input('high');
         $targetLow  = $request->input('low');
@@ -522,7 +522,7 @@ class MarketController extends ApiController {
             $taskKey = sprintf(config('kline.preview_task_key'), $uid, $symbol);
             $task    = [
                 'symbol_id'   => $coinID,
-                'symbol_type' => $coinType,
+                // 'symbol_type' => $coinType,
                 'open'        => $open,
                 'high'        => $targetHigh,
                 'low'         => $targetLow,
