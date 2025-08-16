@@ -52,10 +52,12 @@ class Test extends Command
             if (!$curUser) {
                 continue;
             }
+            $curUser->level_id = 4;
+            $curUser->save();
 
-            $wallet = UserWalletFutures::where('uid', $curUser->id)->first();
-            $wallet->balance = 1000000;
-            $wallet->save();
+            // $wallet = UserWalletFutures::where('uid', $curUser->id)->first();
+            // $wallet->balance = 1000000;
+            // $wallet->save();
         }
         return $this->info('ok');
 
