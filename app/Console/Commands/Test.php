@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\UserInbox;
 use App\Models\UserLevel;
 use App\Models\UserOrderFutures;
+use App\Models\UserWalletFutures;
 use App\Notifications\SendRegisterCaptcha;
 use App\Notifications\SendRegisterPhoneCaptcha;
 use Illuminate\Console\Command;
@@ -46,20 +47,15 @@ class Test extends Command
     {
 
          for ($i=1;$i<=100;$i++) {
-              $user = new User();
-              $user->email = 'test_'.$i.'@gmail.com';
-              $user->password = Hash::make('Aa.123123');
-              
-            $user->level_id         = UserLevel::getFirstLevel();
-            $user->name             = 'user:'.Str::random(8);
-            $user->register_ip      = '127.0.0.1';
-            $user->register_device  = 'null';
-            $user->parent_id        = 'null';
-            $user->salesman         = 0;
+            $curEmail = 'test_'.$i.'@gmail.com';
+            $curUser = User::where('email', $curEmail)->first();
+            if (!$curUser) {
+                continue;
+            }
 
-            $user->save();
-            // 创建钱包
-            UserCreated::dispatch($user);
+            $wallet = UserWalletFutures::where('uid', $curUser->id)->first();
+            $wallet->balance = 1000000;
+            $wallet->save();
         }
         return $this->info('ok');
 
