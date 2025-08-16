@@ -4,14 +4,17 @@
 namespace App\Console\Commands;
 
 use App\Enums\FundsEnums;
+use App\Events\UserCreated;
 use App\Models\User;
 use App\Models\UserInbox;
+use App\Models\UserLevel;
 use App\Models\UserOrderFutures;
 use App\Notifications\SendRegisterCaptcha;
 use App\Notifications\SendRegisterPhoneCaptcha;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Internal\Common\Actions\SendCloud;
@@ -41,6 +44,26 @@ class Test extends Command
      */
     public function handle()
     {
+
+         for ($i=1;$i<=100;$i++) {
+              $user = new User();
+              $user->email = 'test_'.$i.'@gmail.com';
+              $user->password = Hash::make('Aa.123123');
+              
+            $user->level_id         = UserLevel::getFirstLevel();
+            $user->name             = 'user:'.Str::random(8);
+            $user->register_ip      = '127.0.0.1';
+            $user->register_device  = 'null';
+            $user->parent_id        = 'null';
+            $user->salesman         = 0;
+
+            $user->save();
+            // 创建钱包
+            UserCreated::dispatch($user);
+        }
+        return $this->info('ok');
+
+
         $account = '855887203829';
         $captcha = '123456';
         // $phone = trim($account,'00');
