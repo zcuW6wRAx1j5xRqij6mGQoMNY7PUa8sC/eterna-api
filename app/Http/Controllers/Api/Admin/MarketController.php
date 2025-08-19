@@ -203,8 +203,11 @@ class MarketController extends ApiController {
             }
 
 
-
-            $symbol = Symbol::find($id);
+            $cfg = PlatformSymbolPrice::with('symbol')->where('id', $id)->first();
+            if (!$cfg) {
+                throw new LogicException('数据不正确');
+            }
+            $symbol = $cfg->symbol;
             if (!$symbol) {
                 throw new LogicException('数据不正确');
             }
@@ -235,7 +238,7 @@ class MarketController extends ApiController {
             $service = new ServicesBotTask();
             $result = $service->createTask(
                 $request->user()->id,
-                $id,
+                $symbol->id,
                 'spot',
                 $open,
                 $high,
