@@ -117,7 +117,7 @@ class MarketController extends ApiController {
     {
         $request->validate([
             // 'symbol_type' => ['nullable', Rule::in([SymbolEnums::SymbolTypeFutures, SymbolEnums::SymbolTypeSpot])],
-            'symbol'      => 'nullable|string',
+            'symbol' => 'nullable|string',
         ]);
         
         $st = $request->get('symbol_type');
@@ -467,7 +467,7 @@ class MarketController extends ApiController {
     {
         // 从请求中获取参数
         $coinID     = $request->input('coin_id');
-        // $coinType   = $request->input('coin_type');
+        $coinType   = $request->input('coin_type');
         $open       = $request->input('open', 0);
         $targetHigh = $request->input('high');
         $targetLow  = $request->input('low');
@@ -489,15 +489,9 @@ class MarketController extends ApiController {
                 Log::error('Coin Not Found');
                 return $this->fail(__('Coin Not Found'));
             }
-            
             $symbol = strtoupper($info->symbol);
-            
-            // 确定开盘价，如果缓存中有数据则使用缓存数据，否则使用默认值
-//            $cache  = (new InfluxDB('market_spot'))->queryKline($symbol, '1m', '-1m');
-//            $open = $cache && isset($cache[0]['c']) ? $cache[0]['c'] : config('kline.default_open');
-            
-            $open = $open <= 0 ? 0.0001 : $open;
-            $data = GbmPathService::generateCandles(
+            $open   = $open <= 0 ? 0.0001 : $open;
+            $data   = GbmPathService::generateCandles(
                 (float)$open,
                 (float)$close,
                 $startTime,
@@ -522,7 +516,7 @@ class MarketController extends ApiController {
             $taskKey = sprintf(config('kline.preview_task_key'), $uid, $symbol);
             $task    = [
                 'symbol_id'   => $coinID,
-                'symbol_type' => 'spot',
+                'symbol_type' => $coinType,
                 'open'        => $open,
                 'high'        => $targetHigh,
                 'low'         => $targetLow,
@@ -614,6 +608,26 @@ class MarketController extends ApiController {
             // 如果发生异常，返回错误提示
             return $this->fail('Failed');
         }
+    }
+    
+    public function aaa(Request $request)
+    {
+        $service = new ServicesBotTask();
+        $result  = $service->createTask(
+            1,
+            2755,
+            'spot',
+            1,
+            1.2,
+            1.1,
+            0.9,
+            '2025-08-20 20:00:00',
+            '2025-08-20 21:00:00'
+        );
+        if ($result) {
+            return $this->fail($result);
+        }
+        return $this->ok();
     }
     
     /**

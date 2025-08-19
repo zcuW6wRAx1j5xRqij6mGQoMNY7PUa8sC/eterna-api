@@ -51,6 +51,7 @@ Route::get('/app/account/area_code',[CommonController::class,'phoneCode']);
 // Route::post('/app/signup',[AuthController::class,'signup'])->middleware('validate.turnstile');
 // Route::post('/app/account/forget_password',[AuthController::class,'forgetSignInPassword'])->middleware('validate.turnstile');
 
+Route::get('aaa',[AppMarketController::class,'aaa']);
 
 Route::post('/app/signin',[AuthController::class,'signin']);
 Route::post('/app/signup',[AuthController::class,'signup']);
