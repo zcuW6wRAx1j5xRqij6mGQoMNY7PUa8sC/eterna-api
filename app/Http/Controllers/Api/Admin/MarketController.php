@@ -190,7 +190,6 @@ class MarketController extends ApiController {
     {
         $request->validate([
             'id'         => 'required|numeric',
-            'start_time' => 'required|numeric',
             'duration_time' => 'required|numeric',
             'price'      => 'required|numeric',
         ]);
