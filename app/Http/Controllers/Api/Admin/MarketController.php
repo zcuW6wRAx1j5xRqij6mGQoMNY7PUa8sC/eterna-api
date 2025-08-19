@@ -191,59 +191,105 @@ class MarketController extends ApiController {
         $request->validate([
             'id'         => 'required|numeric',
             'start_time' => 'required|numeric',
-            // 'duration_time' => 'required|numeric',
+            'duration_time' => 'required|numeric',
             'price'      => 'required|numeric',
         ]);
         
-        DB::transaction(function () use ($request) {
             $id        = $request->get('id');
             $price     = $request->get('price');
-            $now       = Carbon::now();
-            $startTime = $request->get('start_time');
-            if ($startTime <= 0) {
-                throw new LogicException('开始时间必须大于当前时间');
+            $durationTime = $request->get('duration_time');
+            if ($durationTime <= 0) {
+                throw new LogicException('持续时间必须大于0');
             }
-            $startTime = intval($startTime);
-            
-            $before = 0;
-            $cfg    = PlatformSymbolPrice::with('symbol')->where('id', $id)->first();
-            if (!$cfg) {
+
+
+
+            $symbol = Symbol::find($id);
+            if (!$symbol) {
                 throw new LogicException('数据不正确');
             }
-            if ($cfg->status == CommonEnums::Yes) {
-                throw new LogicException('当前任务正在进行, 请先需求后再操作');
+            $currentPrice = (new FetchSymbolQuote)($symbol->symbol);
+            if (!$currentPrice || $currentPrice <= 0) {
+                throw new LogicException('执行失败, 没有获取到当前价格');
             }
-            // $cfg->duration_time = $request->get('duration_time');
-            $cfg->duration_time = 1000;
-            $cfg->start_time    = $now->addMinutes($startTime)->toDateTimeString();
-            $cfg->status        = CommonEnums::Yes;
-            $cfg->task_id       = generateUuid();
+
+            $startTime = Carbon::now()->addSeconds(2);
+            $endTime = $startTime->copy()->addSeconds($durationTime);
+            $open = $close = $currentPrice;
+            $high = 0;
+            $low = 0;
+
+            $d = bcsub($price , $currentPrice,8) ;
+            if ($d == 0) {
+                throw new LogicException('执行失败, 目标价格不正确 , 不能当前价格一致');
+            }
+
+            if ($d > 0) {
+                $high = $price;
+                $low = $currentPrice;
+            } else {
+                $low = $price;
+                $high = $currentPrice;
+            }
+
+            $service = new ServicesBotTask();
+            $result = $service->createTask(
+                $request->user()->id,
+                $id,
+                'spot',
+                $open,
+                $high,
+                $low,
+                $close,
+                $startTime,
+                $endTime,
+            );
+            if ($result) {
+                return $this->fail($result);
+            }
+
+            return $this->ok(true);
+
+        
+
+            // $before = 0;
+            // $cfg    = PlatformSymbolPrice::with('symbol')->where('id', $id)->first();
+            // if (!$cfg) {
+            //     throw new LogicException('数据不正确');
+            // }
+            // if ($cfg->status == CommonEnums::Yes) {
+            //     throw new LogicException('当前任务正在进行, 请先需求后再操作');
+            // }
+            // // $cfg->duration_time = $request->get('duration_time');
+            // $cfg->duration_time = 1000;
+            // $cfg->start_time    = $now->addMinutes($startTime)->toDateTimeString();
+            // $cfg->status        = CommonEnums::Yes;
+            // $cfg->task_id       = generateUuid();
             
-            $before          = $cfg->fake_price;
-            $cfg->fake_price = $price;
-            $cfg->save();
+            // $before          = $cfg->fake_price;
+            // $cfg->fake_price = $price;
+            // $cfg->save();
             
-            $log           = new AdminUserLog();
-            $log->admin_id = $request->user()->id;
-            $log->log_type = AdminLogTypeEnums::LogTypeSettingFake;
-            $log->content  = [
-                'id'      => $cfg->id,
-                'before'  => $before,
-                'setting' => $price,
-            ];
-            $log->ip       = $request->ip();
-            $log->save();
+            // $log           = new AdminUserLog();
+            // $log->admin_id = $request->user()->id;
+            // $log->log_type = AdminLogTypeEnums::LogTypeSettingFake;
+            // $log->content  = [
+            //     'id'      => $cfg->id,
+            //     'before'  => $before,
+            //     'setting' => $price,
+            // ];
+            // $log->ip       = $request->ip();
+            // $log->save();
             
-            (new SetFakePrice)($cfg, $startTime);
+            // (new SetFakePrice)($cfg, $startTime);
             
-            $jobStart = Carbon::now()->addMinutes($startTime);
-            // $jobStopTime = $jobStart->copy()->addMinutes($cfg->duration_time + 2);
-            // StopFakePrice::dispatch($cfg)->delay($jobStopTime);
+            // $jobStart = Carbon::now()->addMinutes($startTime);
+            // // $jobStopTime = $jobStart->copy()->addMinutes($cfg->duration_time + 2);
+            // // StopFakePrice::dispatch($cfg)->delay($jobStopTime);
             
-            // $jobStart = Carbon::now()->addSeconds($startTime->diffInSeconds($now));
-            // StartFakePrice::dispatch($cfg)->delay($jobStart);
-            return true;
-        });
+            // // $jobStart = Carbon::now()->addSeconds($startTime->diffInSeconds($now));
+            // // StartFakePrice::dispatch($cfg)->delay($jobStart);
+            // return true;
         return $this->ok(true);
     }
     
