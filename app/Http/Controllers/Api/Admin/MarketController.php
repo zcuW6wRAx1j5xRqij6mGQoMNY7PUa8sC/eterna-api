@@ -568,7 +568,7 @@ class MarketController extends ApiController {
             $taskKey = sprintf(config('kline.preview_task_key'), $uid, $symbol);
             $task    = [
                 'symbol_id'   => $coinID,
-                'symbol_type' => $coinType,
+                'symbol_type' => 'spot',
                 'open'        => $open,
                 'high'        => $targetHigh,
                 'low'         => $targetLow,
@@ -751,7 +751,6 @@ class MarketController extends ApiController {
             $row = array_merge([
                 'status'        => CommonEnums::Yes,
                 'creator'       => $uid,
-                'symbol_type'   =>'spot'
             ], $task);
 
             // 检测是否与机器人执行时间冲突
