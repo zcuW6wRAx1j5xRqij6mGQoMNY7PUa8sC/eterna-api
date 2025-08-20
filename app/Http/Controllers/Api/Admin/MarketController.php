@@ -212,7 +212,10 @@ class MarketController extends ApiController {
         $endTime = $startTime->copy()->addSeconds($durationTime);
 
         // 检测是否与机器人执行时间冲突
-        $rows = BotTask::query()->where('status', CommonEnums::Yes)->get();
+        $rows = BotTask::query()
+            ->where('symbol_id', $symbol->id)
+            ->where('status', CommonEnums::Yes)
+            ->get();
         foreach ($rows as $row) {
             $start  = Carbon::parse($row['start_at'], config('app.timezone'))->setTimezone('UTC');
             $end    = Carbon::parse($row['end_at'], config('app.timezone'))->setTimezone('UTC');
@@ -756,7 +759,10 @@ class MarketController extends ApiController {
             // 检测是否与机器人执行时间冲突
             $newTaskStart = Carbon::parse($row['start_at'], config('app.timezone'))->setTimezone('UTC');
             $newTaskEndAt = Carbon::parse($row['end_at'], config('app.timezone'))->setTimezone('UTC');
-            $histories    = BotTask::query()->where('status', CommonEnums::Yes)->get();
+            $histories    = BotTask::query()
+                ->where('symbol_id', $symbolInfo->id)
+                ->where('status', CommonEnums::Yes)
+                ->get();
             foreach ($histories as $history) {
                 $start  = Carbon::parse($history['start_at'], config('app.timezone'))->setTimezone('UTC');
                 $end    = Carbon::parse($history['end_at'], config('app.timezone'))->setTimezone('UTC');
