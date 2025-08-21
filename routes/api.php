@@ -329,6 +329,7 @@ Route::prefix('admin')->middleware('auth:admin')->group(function(){
     Route::prefix('order')->controller(OrderController::class)->group(function(){
         Route::get('/spot','spotOrders');
         Route::get('/futures','futuresOrders');
+        Route::post('/futures/close','closeFuturesOrder');
     });
 
     Route::prefix('activity')->controller(AdminActivityController::class)->group(function(){
