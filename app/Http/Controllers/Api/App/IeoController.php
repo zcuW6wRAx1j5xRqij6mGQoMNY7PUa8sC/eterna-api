@@ -73,7 +73,7 @@ class IeoController extends ApiController
         DB::transaction(function () use ($request) {
             $request->user()->checkFundsLock();
 
-            $amount = abs($request->get('amount'));
+            $amount = parseNumber($request->get('amount'));
             if ($amount <= 0) {
                 throw new LogicException(__('The amount is incorrect !'));
             }

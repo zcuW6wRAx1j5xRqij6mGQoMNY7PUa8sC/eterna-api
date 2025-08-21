@@ -244,4 +244,3 @@ class WalletController extends ApiController {
         return $this->ok(new UserWithdrawCollection($query->orderByDesc('created_at')->paginate($request->get('page_size',15))));
     }
 }
-

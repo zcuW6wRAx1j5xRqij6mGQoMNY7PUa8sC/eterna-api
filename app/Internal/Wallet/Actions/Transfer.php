@@ -24,7 +24,8 @@ class Transfer {
     {
         return DB::transaction(function() use($request, $user){
             $toWallet = $request->get('to');
-            $amount = $request->get('amount',0);
+            $amount = parseNumber($request->get('amount',0));
+
             if (!is_numeric($amount)) {
                 throw new LogicException(__('Whoops! Something went wrong'));
             }

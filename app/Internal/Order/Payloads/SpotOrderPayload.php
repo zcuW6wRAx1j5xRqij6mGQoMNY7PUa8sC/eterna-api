@@ -57,8 +57,8 @@ class SpotOrderPayload {
     public function parseFromRequest(Request $request)
     {
         $this->side = $request->get('side');
-        $this->quantity = number_format(abs($request->get('quantity',0)), FundsEnums::DecimalPlaces,'.','');
-        $this->price = abs($request->get('price',0));
+        $this->quantity = parseNumber($request->get('quantity',0));
+        $this->price = parseNumber($request->get('price',0));
         $this->tradeType = $request->get('trade_type');
         $this->spotId = $request->get('spot_id');
         $this->user = $request->user();

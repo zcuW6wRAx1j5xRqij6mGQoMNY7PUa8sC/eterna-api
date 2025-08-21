@@ -16,8 +16,8 @@ class ModifySLTP {
         return DB::transaction(function() use($request){
 
             $orderId = $request->get('order_id');
-            $sl = abs(intval( $request->get('sl',0)));
-            $tp = abs(intval( $request->get('tp',0)));
+            $sl =  parseNumber($request->get('sl',0));
+            $tp = parseNumber($request->get('tp',0));
 
             $order = UserOrderFutures::lockForUpdate()->find($orderId);
             if (!$order) {
