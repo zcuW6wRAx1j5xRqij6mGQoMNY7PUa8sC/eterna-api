@@ -20,6 +20,7 @@ class InitUserWallet
             // 用户资产钱包
             $exists = UserWalletAddress::where('uid', $user->id)->first();
             if (!$exists) {
+
                 $this->createTestWalletAddr($user);;
                 // if (App::environment('prod')) {
                 //     $this->createUdunWallet($user);
