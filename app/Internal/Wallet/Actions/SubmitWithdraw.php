@@ -28,8 +28,7 @@ class SubmitWithdraw
             $walletId = $request->get('coin_id');
             $amount = $request->get('amount', 0);
             $blockName = $request->get('child_name');
-            $amount = abs($amount);
-            $amount = floatTransferString($amount);
+            $amount = parseNumber($amount);
             $walletAddr = $request->get('wallet_address');
 
             

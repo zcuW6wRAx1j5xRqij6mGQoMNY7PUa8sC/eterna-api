@@ -58,14 +58,14 @@ class FuturesOrderPayload {
     public function parseFromRequest(Request $request)
     {
         $this->side = $request->get('side');
-        $this->price = abs($request->get('price',0));
+        $this->price = parseNumber($request->get('price',0));
         $this->tradeType = $request->get('trade_type');
         $this->marginType = $request->get('margin_type');
         $this->leverage = $request->get('leverage');
-        $this->lots = number_format(abs($request->get('lots',0)), FundsEnums::DecimalPlaces,'.','');
+        $this->lots = parseNumber($request->get('lots',0));
         $this->futuresId = $request->get('futures_id');
-        $this->sl = abs($request->get('sl',0));
-        $this->tp = abs($request->get('tp',0));
+        $this->sl = parseNumber($request->get('sl',0));
+        $this->tp = parseNumber($request->get('tp',0));
         $this->user = $request->user();
 
         if ($this->lots <= 0) {

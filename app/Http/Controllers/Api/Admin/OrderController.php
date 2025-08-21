@@ -11,10 +11,13 @@ use App\Models\UserOrderSpot;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
+use Internal\Order\Actions\CloseFuturesOrder;
 use Symfony\Component\HttpFoundation\Exception\BadRequestException;
 use InvalidArgumentException;
 
+/** @package App\Http\Controllers\Api\Admin */
 class OrderController extends ApiController {
 
 
@@ -167,4 +170,25 @@ class OrderController extends ApiController {
         return $this->ok(listResp($data));
     }
 
+
+    /**
+     * 平仓用户订单
+     * @param Request $request 
+     * @param CloseFuturesOrder $closeFutures 
+     * @return JsonResponse 
+     * @throws BadRequestException 
+     * @throws BindingResolutionException 
+     */
+    public function closeFuturesOrder(Request $request, CloseFuturesOrder $closeFutures) {
+        $request->validate([
+            'order_id' => 'required|numeric',
+        ]);
+        $orderId = $request->get('order_id');
+        $closeFutures($orderId,0 , OrderEnums::FuturesCloseTypeForces);
+        Log::info('admin close user order',[
+            'order_id'=>$orderId,
+            'admin_id'=>$request->user()->id,
+        ]);
+        return $this->ok(true);
+    }
 }

@@ -12,7 +12,6 @@ use App\Http\Controllers\Api\Admin\MarketController as AppMarketController;
 use App\Http\Controllers\Api\Admin\MenuController;
 use App\Http\Controllers\Api\Admin\OtcController;
 use App\Http\Controllers\Api\App\OtcController as AppOtcController;
-use App\Http\Controllers\Api\Admin\PostController;
 use App\Http\Controllers\Api\Admin\RoleController;
 use App\Http\Controllers\Api\Admin\OrderController;
 use App\Http\Controllers\Api\Admin\UserController as AppUserController;
@@ -51,7 +50,6 @@ Route::get('/app/account/area_code',[CommonController::class,'phoneCode']);
 // Route::post('/app/signin',[AuthController::class,'signin'])->middleware('validate.turnstile');
 // Route::post('/app/signup',[AuthController::class,'signup'])->middleware('validate.turnstile');
 // Route::post('/app/account/forget_password',[AuthController::class,'forgetSignInPassword'])->middleware('validate.turnstile');
-
 
 Route::post('/app/signin',[AuthController::class,'signin']);
 Route::post('/app/signup',[AuthController::class,'signup']);
@@ -286,6 +284,14 @@ Route::prefix('admin')->middleware('auth:admin')->group(function(){
         Route::get('/symbol/price/detail', 'getAirCoinPrice');
         Route::post('/symbol/price','setFakePrice');
         Route::post('/symbol/price/cancel','cancelFakePrice');
+        
+        Route::get('/bot/task/list', 'BotTaskList');
+        Route::post('/bot/task/preview', 'previewKline');
+        Route::post('/bot/task/switch-type', 'changeKlineType');
+        Route::post('/bot/task/add', 'NewBotTask');
+        Route::post('/bot/task/edit', 'changeFloat');
+        Route::post('/bot/task/delete', 'DeleteBotTask');
+        Route::post('/bot/task/cancel', 'CancelBotTask');
 
     });
 
@@ -323,6 +329,7 @@ Route::prefix('admin')->middleware('auth:admin')->group(function(){
     Route::prefix('order')->controller(OrderController::class)->group(function(){
         Route::get('/spot','spotOrders');
         Route::get('/futures','futuresOrders');
+        Route::post('/futures/close','closeFuturesOrder');
     });
 
     Route::prefix('activity')->controller(AdminActivityController::class)->group(function(){

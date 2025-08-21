@@ -113,7 +113,7 @@ class FinancialController extends ApiController
 
         DB::transaction(function () use ($request) {
             $amount = $request->get('amount');
-            $amount = abs($amount);
+            $amount = parseNumber($amount);
             if ($amount <= 0) {
                 throw new LogicException(__('invalid amount'));
             }

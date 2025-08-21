@@ -22,7 +22,7 @@ class SymbolFuturesResource extends JsonResource
             'symbol_id'=>$this->symbol_id,
             'binance_symbol'=>strtolower($this->symbol->binance_symbol ?? ''),
             'name'=>$this->symbol->name,
-            'logo'=>$this->coin->logo,
+            'logo'=>$this->coin->logo ?? '',
             'base_asset'=>$this->symbol->base_asset,
             'quote_asset'=>$this->symbol->quote_asset,
             'digits'=>$this->symbol->digits,

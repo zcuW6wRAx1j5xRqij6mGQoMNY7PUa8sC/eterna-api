@@ -23,7 +23,8 @@ class SetFakePrice {
             return true;
         }
 
-        $key = $task->symbol_type == SymbolEnums::SymbolTypeSpot ? sprintf(OrderEnums::SpotFakePriceKey, $task->symbol->symbol) : sprintf(OrderEnums::FuturesFakePriceKey, $task->symbol->symbol) ;
+        $key = sprintf(OrderEnums::SpotFakePriceKey, $task->symbol->symbol) ;
+        // $key = $task->symbol_type == SymbolEnums::SymbolTypeSpot ? sprintf(OrderEnums::SpotFakePriceKey, $task->symbol->symbol) : sprintf(OrderEnums::FuturesFakePriceKey, $task->symbol->symbol) ;
 
         $payload = [
             'price'=>$task->fake_price,
@@ -60,7 +61,8 @@ class SetFakePrice {
         $task->task_id = '';
         $task->save();
         
-        $key = $task->symbol_type == SymbolEnums::SymbolTypeSpot ? sprintf(OrderEnums::SpotFakePriceKey, $task->symbol->symbol) : sprintf(OrderEnums::FuturesFakePriceKey, $task->symbol->symbol) ;
+        $key = sprintf(OrderEnums::SpotFakePriceKey, $task->symbol->symbol);
+        // $key = $task->symbol_type == SymbolEnums::SymbolTypeSpot ? sprintf(OrderEnums::SpotFakePriceKey, $task->symbol->symbol) : sprintf(OrderEnums::FuturesFakePriceKey, $task->symbol->symbol) ;
         RedisMarket()->delete($key);
         return true;
     }

@@ -31,9 +31,9 @@ class Kline {
         }
 
         $symbol = null;
-        $bucket = MarketEnums::FuturesInfluxdbBucket;
+        $bucket = MarketEnums::SpotInfluxdbBucket;
+
         if ($symbolType == SymbolEnums::SymbolTypeSpot) {
-            $bucket = MarketEnums::SpotInfluxdbBucket;
             $symbol = SymbolSpot::find($symbolId);
         } else {
             $symbol = SymbolFutures::find($symbolId);
@@ -51,10 +51,9 @@ class Kline {
      */
     public function allSymbolSimpleKline(string $symbolType, array $symbolIds) {
         $data = Cache::remember(sprintf(self::CacheKeyAllSymbols,$symbolType),self::CacheKeyAllSymbolsTTL,function() use($symbolType){
-            $bucket = MarketEnums::FuturesInfluxdbBucket;
+            $bucket = MarketEnums::SpotInfluxdbBucket;
             $symbols = [];
             if ($symbolType == SymbolEnums::SymbolTypeSpot) {
-                $bucket = MarketEnums::SpotInfluxdbBucket;
                 $symbols = SymbolSpot::with(['symbol'])->where('status', CommonEnums::Yes)->get();
             } else {
                 $symbols = SymbolFutures::with(['symbol'])->where('status', CommonEnums::Yes)->get();

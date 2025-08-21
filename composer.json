@@ -5,7 +5,7 @@
     "keywords": ["laravel", "framework"],
     "license": "MIT",
     "require": {
-        "php": "^8.1",
+        "php": "^8.2",
         "aws/aws-sdk-php": "^3.320",
         "binance/binance-connector-php": "^1.6",
         "centrifugal/phpcent": "~6.0",

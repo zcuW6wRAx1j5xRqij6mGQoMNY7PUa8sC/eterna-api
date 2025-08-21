@@ -33,6 +33,18 @@ if (!function_exists('friendly_number')) {
 
 if (!function_exists('listResp')) {
     /**
+     * @param mixed $num 
+     * @return string 
+     */
+    function parseNumber($num) {
+        $num = str_replace(',', '.', $num);
+        return number_format(abs($num), FundsEnums::DecimalPlaces,'.','');
+    }
+}
+
+
+if (!function_exists('listResp')) {
+    /**
      * 列表返回格式
      * @param \Illuminate\Contracts\Pagination\LengthAwarePaginator $paginator
      * @param callable|null $callback

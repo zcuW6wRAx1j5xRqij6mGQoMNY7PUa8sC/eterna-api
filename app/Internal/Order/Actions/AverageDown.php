@@ -23,7 +23,7 @@ class AverageDown {
         return DB::transaction(function() use($request){
             $orderId = $request->get('order_id');
             // 只能整数位补仓
-            $amount = intval($request->get('amount'));
+            $amount = parseNumber($request->get('amount',0));
             if ($amount == 0) {
                 throw new LogicException(__('The amount is incorrect'));
             }
