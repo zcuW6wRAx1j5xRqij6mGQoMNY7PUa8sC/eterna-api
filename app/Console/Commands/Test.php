@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 
 use App\Enums\FundsEnums;
 use App\Events\UserCreated;
+use App\Models\AdminUser;
 use App\Models\User;
 use App\Models\UserInbox;
 use App\Models\UserLevel;
@@ -23,6 +24,7 @@ use Internal\Market\Services\BinanceService;
 use Internal\Order\Actions\TradeCalculator;
 use Internal\Pay\Services\UdunService;
 use Internal\Tools\Services\CentrifugalService;
+use Internal\User\Actions\InitUserWallet;
 
 class Test extends Command
 {
@@ -49,15 +51,26 @@ class Test extends Command
          for ($i=1;$i<=100;$i++) {
             $curEmail = 'test_'.$i.'@gmail.com';
             $curUser = User::where('email', $curEmail)->first();
-            if (!$curUser) {
+            if ($curUser) {
                 continue;
             }
+
+            $curUser = new User();
+            $curUser->name = 'user:'.Str::random(8);
+            $curUser->email = $curEmail;
+            $curUser->register_ip      = '127.0.0.1';
+            $curUser->register_device  = 'web';
+            $curUser->password = Hash::make('123456');
+            $curUser->parent_id = 1;
+            $curUser->salesman = AdminUser::find(1);
             $curUser->level_id = 4;
             $curUser->save();
 
-            // $wallet = UserWalletFutures::where('uid', $curUser->id)->first();
-            // $wallet->balance = 1000000;
-            // $wallet->save();
+            (new InitUserWallet)($curUser);
+
+            $wallet = UserWalletFutures::where('uid', $curUser->id)->first();
+            $wallet->balance = 1000000;
+            $wallet->save();
         }
         return $this->info('ok');
 
