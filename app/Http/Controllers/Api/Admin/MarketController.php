@@ -314,17 +314,60 @@ class MarketController extends ApiController {
     public function modifySymbols(Request $request)
     {
         $request->validate([
-            'id'     => 'required|numeric',
+            'id'     => 'nullable|numeric',
+            'base_asset'=>'required|string',
+            'quote_asset'=>'required|string',
+            'self_data' => ['required',Rule::in([CommonEnums::Yes, CommonEnums::No])],
             'status' => ['nullable', Rule::in([CommonEnums::Yes, CommonEnums::No])],
         ]);
 
-        $status = $request->get('status', null);
-        $symbol = Symbol::findOrFail($request->get('id'));
+        DB::transaction(function() use($request){
+            $id = $request->get('id');
+            $baseAsset = $request->get('base_asset');
+            $quoteAsset = $request->get('quote_asset');
+            $selfData = $request->get('self_data');
+            $status = $request->get('status', null);
 
-        if ($status !== null) {
-            $symbol->status = $status;
-        }
-        $symbol->save();
+            $symbolModel = null;
+
+            if ($id) {
+                $symbolModel = Symbol::find($id);
+                if (!$symbolModel) {
+                    throw new LogicException('数据不正确');
+                }
+            } else {
+                $symbolModel = new Symbol();
+            }
+
+            $name = strtoupper($baseAsset) . '/' . strtoupper($quoteAsset);
+            $symbol = strtolower($baseAsset).strtolower($quoteAsset);
+            if ($selfData != CommonEnums::Yes) {
+                $binanceSymbol = strtoupper($baseAsset) . strtoupper($quoteAsset);
+            }
+
+            $symbolExists = Symbol::where('symbol', $symbol)->exists();
+            if ($symbolExists || $symbolExists->id != $id) {
+                throw new LogicException('交易对已存在');
+            }
+            
+            $symbolCoin = SymbolCoin::where('name', strtoupper($baseAsset))->first();
+            if (!$symbolCoin) {
+                $symbolCoin = new SymbolCoin();
+                $symbolCoin->name = strtoupper($baseAsset);
+                $symbolCoin->block = strtoupper($baseAsset);
+                $symbolCoin->save();
+            }
+
+            $symbolModel->name = $name;
+            $symbolModel->symbol = $symbol;
+            $symbolModel->coin_id = $symbolCoin->id;
+            $symbolModel->binance_symbol = $binanceSymbol ?? null;
+            $symbolModel->self_data = $selfData;
+            $symbolModel->status = $status;
+            $symbolModel->save();
+            return true;
+        });
+
         return $this->ok(true);
     }
 
