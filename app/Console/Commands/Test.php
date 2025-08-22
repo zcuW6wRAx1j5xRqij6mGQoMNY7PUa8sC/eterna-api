@@ -62,7 +62,7 @@ class Test extends Command
             $curUser->register_device  = 'web';
             $curUser->password = Hash::make('123456');
             $curUser->parent_id = 1;
-            $curUser->salesman = AdminUser::find(1);
+            $curUser->salesman = 1;
             $curUser->level_id = 4;
             $curUser->save();
 
