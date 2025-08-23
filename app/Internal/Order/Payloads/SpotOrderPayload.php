@@ -65,7 +65,7 @@ class SpotOrderPayload {
 
 
         if ($this->quantity <= 0) {
-            throw new LogicException(__('Whoops! Something went wrong'));
+            throw new LogicException(__('Invalid quantity'));
         }
         $spot = SymbolSpot::find($this->spotId);
         if (!$spot) {
