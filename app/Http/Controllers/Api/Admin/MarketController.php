@@ -50,7 +50,17 @@ class MarketController extends ApiController {
      */
     public function simpleSymbols(Request $request)
     {
-        $data = Symbol::select(['id', 'name', 'symbol', 'binance_symbol'])->where('quote_asset', 'usdt')->where('status', CommonEnums::Yes)->get();
+        $request->validate([
+            'keyword'=>'nullable|string',
+        ]);
+
+        $keyword = $request->get('keyword');
+
+        $query = Symbol::select(['id', 'name', 'symbol', 'binance_symbol'])->where('status', CommonEnums::Yes);
+        if ($keyword) {
+            $query->where('symbol','like', '%' . $keyword . '%');
+        }
+        $data = $query->get();
         return $this->ok($data);
     }
 

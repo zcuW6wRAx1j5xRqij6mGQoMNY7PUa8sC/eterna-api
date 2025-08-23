@@ -65,14 +65,6 @@ class SpotController extends ApiController {
             'price'=>'string',
         ]);
 
-        $side = $request->get('side');
-        $spotId = $request->get('spot_id');
-        $user = $request->user();
-    //    if ($side == OrderEnums::SideSell && $spotId == '50' && $user->id == '8089361') {
-    //         // 2025-06-05 王飞需求  HMAI 货币, uid= 8089361 不能卖出
-    //        throw new LogicException(__('The operation is unavailable at this time'));
-    //    }
-
         $request->user()->checkFundsLock();
 
         return $this->ok($createSpotOrder((new SpotOrderPayload)->parseFromRequest($request)));
