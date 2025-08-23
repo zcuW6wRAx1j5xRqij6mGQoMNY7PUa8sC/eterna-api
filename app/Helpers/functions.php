@@ -41,7 +41,6 @@ if (!function_exists('listResp')) {
         $lastComma = strrpos($num, ',');
 
         if ($lastDot !== false && $lastComma !== false) {
-            dump($num);
             // 同时存在 . 和 ,  则确定是 欧洲格式
             // 先去掉千分位
             $num = str_replace('.', '', $num);
