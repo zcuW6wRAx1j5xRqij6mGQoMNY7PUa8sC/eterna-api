@@ -85,6 +85,7 @@ class OrderEnums {
     ];
 
     const FuturesTradeStatusMap = [
+        'all',
         self::FuturesTradeStatusCancel,
         self::FuturesTradeStatusProcessing,
         self::FuturesTradeStatusOpen,
