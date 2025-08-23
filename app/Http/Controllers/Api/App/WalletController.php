@@ -56,6 +56,17 @@ class WalletController extends ApiController {
     }
 
     /**
+     * 现货钱包选择器
+     * @param Request $request
+     * @return JsonResponse
+     * @throws BindingResolutionException
+     */
+    public function spotWalletSelector(Request $request)
+    {
+        return $this->ok((new SpotWallet())->selector($request->user()));
+    }
+
+    /**
      * 合约钱包
      * @param Request $request
      * @param DerivativeWallet $derivativeWallet
@@ -106,11 +117,11 @@ class WalletController extends ApiController {
 
     /**
      * 获取准许划转到现货的可用余额
-     * @param Request $request 
-     * @param FetchAvaiableChangeMoney $fetchAvaiableChangeMoney 
-     * @return JsonResponse 
-     * @throws InvalidArgumentException 
-     * @throws BindingResolutionException 
+     * @param Request $request
+     * @param FetchAvaiableChangeMoney $fetchAvaiableChangeMoney
+     * @return JsonResponse
+     * @throws InvalidArgumentException
+     * @throws BindingResolutionException
      */
     public function allowTransferSpotMoney(Request $request, FetchAvaiableChangeMoney $fetchAvaiableChangeMoney) {
         $money = $fetchAvaiableChangeMoney($request->user());
