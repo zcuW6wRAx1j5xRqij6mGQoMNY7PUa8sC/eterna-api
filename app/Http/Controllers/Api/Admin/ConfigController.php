@@ -3,17 +3,20 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Enums\CommonEnums;
+use App\Enums\ConfigEnums;
 use App\Enums\PlatformEnums;
 use App\Exceptions\LogicException;
 use App\Http\Controllers\Api\ApiController;
 use App\Models\PlatformAnnouncement;
 use App\Models\PlatformBanner;
+use App\Models\PlatformConfig;
 use App\Models\PlatformNotice;
 use App\Models\PlatformProtocol;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Internal\Common\Services\ConfigService;
 use InvalidArgumentException;
 use Symfony\Component\HttpFoundation\Exception\BadRequestException;
 
@@ -92,11 +95,11 @@ class ConfigController extends ApiController {
 
     /**
      * 公告列表
-     * @param Request $request 
-     * @reurn JsonResponse 
-     * @throws BadRequestException 
-     * @throws InvalidArgumentException 
-     * @throws BindingResolutionException 
+     * @param Request $request
+     * @reurn JsonResponse
+     * @throws BadRequestException
+     * @throws InvalidArgumentException
+     * @throws BindingResolutionException
      */
     public function announcements(Request $request) {
         $request->validate([
@@ -116,10 +119,10 @@ class ConfigController extends ApiController {
 
     /**
      * 修改 / 新增公告
-     * @param Request $request 
-     * @return JsonResponse 
-     * @throws BadRequestException 
-     * @throws BindingResolutionException 
+     * @param Request $request
+     * @return JsonResponse
+     * @throws BadRequestException
+     * @throws BindingResolutionException
      */
     public function modifyAnnouncements(Request $request) {
         $request->validate([
@@ -219,7 +222,6 @@ class ConfigController extends ApiController {
      * @return JsonResponse
      * @throws BadRequestException
      * @throws InvalidArgumentException
-     * @throws InvalidCastException
      * @throws BindingResolutionException
      */
     public function setProtocols(Request $request) {
@@ -273,8 +275,62 @@ class ConfigController extends ApiController {
         return $this->ok($all);
     }
 
-    public function configs(Request $request) {
+    /**
+     * 获取配置信息
+     * @throws BindingResolutionException
+     */
+    public function configs(Request $request): JsonResponse
+    {
+        $request->validate([
+            'field'=>['nullable', Rule::in(ConfigEnums::CategoryPlatformCfgs)],
+        ]);
 
+        $allConfigs = ConfigEnums::CategoryPlatformCfgs;
+        $field = $request->get('field','');
+        if ($field) {
+            if (!in_array($field, $allConfigs)) {
+                return $this->fail("field {$field} not found");
+            }
+
+            $configs = PlatformConfig::query()
+                ->where('category', 'platform')
+                ->where('key', $field)
+                ->value('value');
+            return $this->ok($configs);
+        }
+
+        $default    = [];
+        foreach ($allConfigs as $config) {
+            $default[$config] = 0;
+        }
+        $configs = PlatformConfig::query()
+            ->where('category', 'platform')
+            ->whereIn('key', array_keys($default))
+            ->pluck('value', 'key')
+            ->toArray();
+        $configs = array_merge($default, $configs);
+
+        return $this->ok($configs);
+    }
+
+    /**
+     * 修改配置
+     * @throws BindingResolutionException
+     */
+    public function modifyConfig(Request $request): JsonResponse
+    {
+        $request->validate([
+            'field' => ['required', Rule::in(ConfigEnums::CategoryPlatformCfgs)],
+            'value' => 'required|numeric|min:0|max:100',
+        ]);
+
+        PlatformConfig::where('category', 'platform')
+            ->where('key', $request->get('field'))
+            ->update(['value' => $request->get('value')]);
+
+        ConfigService::getIns()->refresh();
+
+        return $this->ok();
     }
 }
 

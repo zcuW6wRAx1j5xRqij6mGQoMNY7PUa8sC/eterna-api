@@ -61,6 +61,7 @@ Route::post('/app/update',[CommonController::class,'updateCheck']);
 Route::get('/app/protocol/aboutme',[CommonController::class,'docAboutMe']);
 Route::get('/app/protocol/terms',[CommonController::class,'docTermsAndConditions']);
 Route::get('/app/protocol/privacy',[CommonController::class,'docPrivacyPolicy']);
+Route::get('/config', [CommonController::class, 'single']);
 
 
 Route::prefix('app')->middleware('auth:sanctum')->group(function(){
@@ -139,6 +140,7 @@ Route::prefix('app')->middleware('auth:sanctum')->group(function(){
     Route::prefix('wallet')->controller(WalletController::class)->group(function(){
         Route::get('spot','spotWallet');
         Route::get('spot/flow','spotWalletFlow');
+        Route::get('spot/selector', 'spotWalletSelector');
         Route::get('futures','futuresWallet');
         Route::get('futures/flow','futuresWalletFlow');
         Route::post('transfer','transfer');
@@ -265,6 +267,9 @@ Route::prefix('admin')->middleware('auth:admin')->group(function(){
 
         Route::get('/announcements','announcements');
         Route::post('/announcement/modify','modifyAnnouncements');
+
+        Route::get('/', [ConfigController::class, 'configs']);
+        Route::post('/modify', [ConfigController::class, 'modifyConfig']);
     });
 
     Route::prefix('market')->controller(AppMarketController::class)->group(function(){

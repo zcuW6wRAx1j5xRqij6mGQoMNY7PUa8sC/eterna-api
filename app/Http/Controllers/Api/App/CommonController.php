@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\App;
 
 use App\Enums\CommonEnums;
+use App\Enums\ConfigEnums;
 use App\Enums\OrderEnums;
 use App\Enums\PhoneCodeEnums;
 use App\Enums\PlatformEnums;
@@ -29,6 +30,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Internal\Common\Actions\Banners;
 use Internal\Common\Actions\Notices;
+use Internal\Common\Services\ConfigService;
 use Internal\Common\Services\R2Service;
 use Internal\Security\Services\CloudflareCaptcha;
 use Internal\Tools\Services\CaptchaService;
@@ -57,9 +59,9 @@ class CommonController extends ApiController {
 
     /**
      * 平台公告
-     * @param Request $request 
-     * @return JsonResponse 
-     * @throws BindingResolutionException 
+     * @param Request $request
+     * @return JsonResponse
+     * @throws BindingResolutionException
      */
     public function announcement(Request $request) {
         $list = PlatformAnnouncement::where('status', CommonEnums::Yes)->get();
@@ -80,12 +82,12 @@ class CommonController extends ApiController {
 
     /**
      * 读取公告
-     * @param Request $request 
-     * @return JsonResponse 
-     * @throws BadRequestException 
-     * @throws InvalidArgumentException 
-     * @throws BindingResolutionException 
-     * @throws InvalidCastException 
+     * @param Request $request
+     * @return JsonResponse
+     * @throws BadRequestException
+     * @throws InvalidArgumentException
+     * @throws BindingResolutionException
+     * @throws InvalidCastException
      */
     public function readTagAnnouncement(Request $request) {
         $request->validate([
@@ -480,6 +482,27 @@ class CommonController extends ApiController {
             'release_content'=>$latestVersion->content,
             'md5_sum'=>$latestVersion->md5_sum,
         ]);
+    }
+
+
+
+
+
+    /**
+     * 获取单条配置信息
+     * @param Request $request
+     * @return JsonResponse
+     * @throws BindingResolutionException
+     */
+    public function single(Request $request): JsonResponse
+    {
+        $request->validate([
+            'field'=>['required', Rule::in(ConfigEnums::CategoryPlatformCfgs)],
+        ]);
+
+        $fee = ConfigService::getIns()->fetch(ConfigEnums::PlatformConfigInstantExchangeFee, 0.00);//手续费比率
+
+        return $this->ok(['fee' => $fee]);
     }
 }
 
