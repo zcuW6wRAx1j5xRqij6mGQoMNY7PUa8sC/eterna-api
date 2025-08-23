@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers\Api\App;
 
+use App\Enums\FundsEnums;
 use App\Enums\OrderEnums;
+use App\Enums\SpotWalletFlowEnums;
 use App\Exceptions\LogicException;
 use App\Http\Controllers\Api\ApiController;
+use App\Internal\Order\Actions\CreateInstantExchangeOrder;
+use App\Models\UserWalletSpotFlow;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Http\Request;
@@ -91,5 +95,55 @@ class SpotController extends ApiController {
         ]);
         $cancelSpotOrder($request);
         return $this->ok(true);
+    }
+
+    /**
+     * 闪兑订单
+     * @param Request $request
+     * @param CreateInstantExchangeOrder $createInstantExchangeOrder
+     * @return JsonResponse
+     * @throws BadRequestException
+     * @throws BindingResolutionException
+     * @throws ContainerExceptionInterface
+     * @throws LogicException
+     */
+    public function instant(Request $request, CreateInstantExchangeOrder $createInstantExchangeOrder)
+    {
+        $request->validate([
+            'from_coin_id' => 'required|integer|exists:symbol_coins,id',
+            'to_coin_id'   => 'required|integer|exists:symbol_coins,id',
+            'quantity'     => 'required|numeric|min:0.0001',
+        ]);
+
+        $fromCoinID = $request->get('from_coin_id');
+        $toCoinID   = $request->get('to_coin_id');
+        $quantity   = number_format(abs($request->get('quantity')), FundsEnums::DecimalPlaces, '.', '');
+        if($fromCoinID == $toCoinID) {
+            throw new LogicException(__('The operation is unavailable at this time'));
+        }
+
+        $result = $createInstantExchangeOrder($fromCoinID, $quantity, $toCoinID, $request->user()->id);
+        return $this->ok($result);
+    }
+
+    /**
+     * 闪兑记录
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function instantLogs(Request $request)
+    {
+        $request->validate([
+            'page'       => 'numeric',
+            'page_size'  => 'numeric',
+        ]);
+
+        $result = UserWalletSpotFlow::query()->with(['coin'])
+            ->where('uid', $request->user()->id)
+            ->where('flow_type', SpotWalletFlowEnums::FlowTypeInstantExchangeAdd)
+            ->orderByDesc('created_at')
+            ->paginate($request->get('page_size'),['*'],null, $request->get('page'));
+
+        return $this->ok($result);
     }
 }

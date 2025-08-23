@@ -38,12 +38,16 @@ class SpotWalletFlowEnums {
 
     // 挂单取消退回
     const FlowTypeRefundPostingOrder = 'refund_posting_order';
+    //闪兑扣除
+    const FlowTypeInstantExchangeDeduct = 'instant_exchange_deduct';
+    //闪兑增加
+    const FlowTypeInstantExchangeAdd = 'instant_exchange_add';
 
     // 成交
     const FlowTypeExecution = 'execution';
     // IEO 购买
     const FlowTypeIEO = 'buy_ieo';
-    // IEO 退回 
+    // IEO 退回
     const FlowTypeIEORefund = 'buy_ieo_refund';
     //IEO 清算
     const FlowTypeIEOSettlement = 'buy_ieo_settlement';
@@ -68,7 +72,8 @@ class SpotWalletFlowEnums {
         self::FlowTypeIEOSettlement,
         self::FlowTypeIEORefund,
         self::FlowTypeFinancial,
-        self::FlowTypeFinancialSettle
+        self::FlowTypeFinancialSettle,
+        self::FlowTypeInstantExchangeDeduct,
     ];
 
 }

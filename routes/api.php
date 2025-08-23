@@ -156,6 +156,8 @@ Route::prefix('app')->middleware('auth:sanctum')->group(function(){
         Route::get('/','orders');
         Route::post('/','create');
         Route::post('/cancel','cancel');
+        Route::post('/instant/exchange', 'instant');//闪兑交易
+        Route::get('/instant/exchange', 'instantLogs');//闪兑交易记录
     });
 
     Route::prefix('order/futures')->controller(FuturesController::class)->group(function(){
@@ -284,7 +286,7 @@ Route::prefix('admin')->middleware('auth:admin')->group(function(){
         Route::get('/symbol/price/detail', 'getAirCoinPrice');
         Route::post('/symbol/price','setFakePrice');
         Route::post('/symbol/price/cancel','cancelFakePrice');
-        
+
         Route::get('/bot/task/list', 'BotTaskList');
         Route::post('/bot/task/preview', 'previewKline');
         Route::post('/bot/task/switch-type', 'changeKlineType');

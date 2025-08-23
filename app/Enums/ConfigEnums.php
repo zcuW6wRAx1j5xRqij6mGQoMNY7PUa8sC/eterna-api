@@ -13,12 +13,14 @@ class ConfigEnums
     const PlatformConfigFuturesCloseFee = 'futures_close_fee';
 
     const PlatformConfigWithdrawFee = 'withdraw_fee';
+    const PlatformConfigInstantExchangeFee = 'instant_exchange_fee';
 
     const CategoryPlatformCfgs = [
         self::PlatformConfigPunchRewards,
         self::PlatformConfigFuturesOpenFee,
         self::PlatformConfigFuturesCloseFee,
         self::PlatformConfigWithdrawFee,
+        self::PlatformConfigInstantExchangeFee,
     ];
 
 
