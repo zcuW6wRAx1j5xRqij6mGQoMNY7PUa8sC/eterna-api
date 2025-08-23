@@ -14,10 +14,12 @@ class SpotWallet {
     {
         (New UpdateSpotWalletUsdt)($user);
         $coins = UserWalletSpot::with(['coin'])->where('uid', $user->id)->get();
-        $usdtWallet = UserWalletSpot::where('uid', $user->id)->sum('usdt_value');
-        // $total = $coins->sum('usdt_value');
+        $totalAssets = UserWalletSpot::where('uid', $user->id)->sum('usdt_value');
+        $usdtWallet = UserWalletSpot::where('uid', $user->id)->where('coin_id', CoinEnums::DefaultUSDTCoinID)->first();
+        
         return [
-            'total'=> $usdtWallet ?? 0,
+            'usdt'=> $usdtWallet ? $usdtWallet->amount : 0,
+            'total'=> $totalAssets ?? 0,
             'coins'=> new UserWalletSpotCollection($coins),
         ];
     }
