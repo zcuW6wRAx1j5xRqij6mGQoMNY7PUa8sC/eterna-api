@@ -70,6 +70,7 @@ Route::prefix('app')->middleware('auth:sanctum')->group(function(){
     Route::get('notices',[CommonController::class,'notices']);
     Route::get('notice/detail',[CommonController::class,'noticeDetail']);
     Route::get('leverages',[CommonController::class,'leverages']);
+    Route::get('/config', [CommonController::class, 'single']);
 
     Route::get('/announcement',[CommonController::class,'announcement']);
     Route::post('/announcement/read',[CommonController::class,'readTagAnnouncement']);
