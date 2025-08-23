@@ -60,9 +60,9 @@ class SpotController extends ApiController {
         $request->validate([
             'spot_id'=>'required|numeric',
             'side'=>['required',Rule::in(OrderEnums::SideMap)],
-            'quantity'=>'required|numeric',
+            'quantity'=>'required|string',
             'trade_type'=>['required',Rule::in(OrderEnums::TradeTypeMap)],
-            'price'=>'numeric',
+            'price'=>'string',
         ]);
 
         $side = $request->get('side');

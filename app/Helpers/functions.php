@@ -38,6 +38,9 @@ if (!function_exists('listResp')) {
      */
     function parseNumber($num) {
         $num = str_replace(',', '.', $num);
+        if (!is_numeric($num)) {
+            return 0;
+        }
         return number_format(abs($num), FundsEnums::DecimalPlaces,'.','');
     }
 }

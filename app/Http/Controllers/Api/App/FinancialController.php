@@ -107,7 +107,7 @@ class FinancialController extends ApiController
     {
         $request->validate([
             'financial_id' => 'required|numeric',
-            'amount' => 'required|numeric',
+            'amount' => 'required|string',
             'duration' => 'required|numeric',
         ]);
 
