@@ -72,7 +72,7 @@ class CreateInstantExchangeOrder
 
             // 获取源币种最新市价
             if($fromCoinID != CoinEnums::DefaultUSDTCoinID){
-                $bs = $originCoinWallet->coin->name.'usdt';
+                $bs = strtolower($originCoinWallet->coin->name.'usdt');
                 $originCoinMarketPrice = (new FetchSymbolQuote)($bs);
                 if (!$originCoinMarketPrice) {
                     Log::error('failed to create instant spot order : no origin coin market price', [
