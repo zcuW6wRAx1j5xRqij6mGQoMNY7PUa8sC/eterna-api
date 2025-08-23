@@ -24,6 +24,11 @@ class CreateOtcOrder
             $comments       = $request->get('comments');
             $tradeType      = $request->get('trade_type');
 
+            $quantity = parseNumber($quantity);
+            if ($quantity <= 0) {
+                throw new InvalidArgumentException(__('Quantity is invalid'));
+            }
+            
             $product = OtcProduct::find($productId);
             if(!$product){
                 throw new InvalidArgumentException(__('Product is not exist'));

@@ -138,7 +138,7 @@ class WalletController extends ApiController {
     public function transfer(Request $request, Transfer $transfer) {
         $request->validate([
             'to'=>['required', Rule::in([TransferEnums::WalletDerivative,TransferEnums::WalletSpot])],
-            'amount'=>'required|numeric',
+            'amount'=>'required|string',
         ]);
 
         $request->user()->checkFundsLock();
@@ -186,7 +186,7 @@ class WalletController extends ApiController {
      */
     public function deposit(Request $request, SubmitDeposit $submitDeposit) {
         $request->validate([
-            'amount'=>'required|numeric',
+            'amount'=>'required|string',
             'coin_id'=>'required|numeric',
         ]);
         //$submitDeposit($request);
@@ -220,7 +220,7 @@ class WalletController extends ApiController {
     public function withdraw(Request $request, SubmitWithdraw $submitWithdraw) {
         $request->validate([
             'coin_id'=>'required|numeric',
-            'amount'=>'required|numeric',
+            'amount'=>'required|string',
             'wallet_address'=>'required|string',
             'child_name'=>'required|string',
             'trade_pwd'=>'required|string',

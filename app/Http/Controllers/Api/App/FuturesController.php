@@ -56,13 +56,13 @@ class FuturesController extends ApiController {
             'futures_id'=>'required|numeric',
             'side'=>['required', Rule::in(OrderEnums::SideMap)],
             'leverage'=>'required|numeric',
-            'lots'=>'required|numeric',
+            'lots'=>'required|string',
             // 'trade_volume'=>'required|numeric',
             'trade_type'=>['required',Rule::in(OrderEnums::TradeTypeMap)],
             'margin_type'=>['required', Rule::in(OrderEnums::MarginTypeMap)],
-            'price'=>'numeric',
-            'sl'=>'nullable|numeric',
-            'tp'=>'nullable|numeric',
+            'price'=>'string',
+            'sl'=>'nullable|string',
+            'tp'=>'nullable|string',
         ]);
 
         // 判断用户等级对应的杠杆倍数
@@ -128,7 +128,7 @@ class FuturesController extends ApiController {
     public function averageDown(Request $request, AverageDown $averageDown) {
         $request->validate([
             'order_id'=>'required|numeric',
-            'amount'=>'required|numeric',
+            'amount'=>'required|string',
         ]);
         return $this->ok($averageDown($request));
     }
@@ -143,8 +143,8 @@ class FuturesController extends ApiController {
     public function modifySLTP(Request $request, ModifySLTP $modifySLTP) {
         $request->validate([
             'order_id'=>'required|numeric',
-            'tp'=>'numeric',
-            'sl'=>'numeric',
+            'tp'=>'string',
+            'sl'=>'string',
         ]);
         return $this->ok($modifySLTP($request));
     }
