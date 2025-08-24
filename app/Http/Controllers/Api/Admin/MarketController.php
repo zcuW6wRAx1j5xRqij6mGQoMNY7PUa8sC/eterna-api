@@ -112,10 +112,16 @@ class MarketController extends ApiController {
             $query->where('name', 'like', '%' . $name . '%');
         }
 
-        $data = $query->orderBy('created_at')->paginate($request->get('page_size'), ['*'], null, $request->get('page'))->makeVisible(['self_data']);
-
-        return $this->ok($data);
-        return $this->ok(listResp($data));
+        $data = $query->orderBy('created_at')->paginate($request->get('page_size'), ['*'], null, $request->get('page'));
+        return $this->ok(listResp($data, function($items){
+            $i = $items['items'] ?? [];
+            if ($i) {
+                collect($i)->each(function($item){
+                    $item['self_data'] = $item['self_data'] ?? [];
+                });
+            }
+            return $items;
+        }));
     }
 
     public function fakePrice(Request $request)
