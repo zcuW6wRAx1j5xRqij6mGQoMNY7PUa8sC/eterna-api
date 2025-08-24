@@ -117,7 +117,7 @@ class MarketController extends ApiController {
             $i = $items['items'] ?? [];
             if ($i) {
                 $items['items'] = collect($i)->map(function($item){
-                    $item['self_data'] = $item['self_data'] ?? [];
+                    $item['self_data'] = $item['self_data'] ?? '';
                     return $item;
                 });
             }
