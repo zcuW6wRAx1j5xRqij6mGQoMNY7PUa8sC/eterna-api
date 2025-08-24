@@ -113,6 +113,8 @@ class MarketController extends ApiController {
         }
 
         $data = $query->orderBy('created_at')->paginate($request->get('page_size'), ['*'], null, $request->get('page'))->makeVisible(['self_data']);
+
+        return $this->ok($data);
         return $this->ok(listResp($data));
     }
 
