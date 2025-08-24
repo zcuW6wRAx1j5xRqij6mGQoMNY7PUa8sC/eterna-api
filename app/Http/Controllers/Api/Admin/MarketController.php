@@ -116,8 +116,9 @@ class MarketController extends ApiController {
         return $this->ok(listResp($data, function($items){
             $i = $items['items'] ?? [];
             if ($i) {
-                collect($i)->each(function($item){
+                $items['items'] = collect($i)->map(function($item){
                     $item['self_data'] = $item['self_data'] ?? [];
+                    return $item;
                 });
             }
             return $items;
