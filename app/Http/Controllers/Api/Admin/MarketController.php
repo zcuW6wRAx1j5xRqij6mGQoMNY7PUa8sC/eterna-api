@@ -365,7 +365,10 @@ class MarketController extends ApiController {
             }
 
             $symbolExists = Symbol::where('symbol', $symbol)->exists();
-            if ($symbolExists || $symbolExists->id != $id) {
+            if ($id && $symbolExists && $symbolExists->id != $id) {
+                throw new LogicException('交易对已存在');
+            }
+            if ($symbolExists) {
                 throw new LogicException('交易对已存在');
             }
             
