@@ -104,7 +104,7 @@ class MarketController extends ApiController {
 
         $status = $request->get('status', null);
         $name   = $request->get('name', '');
-        $query  = Symbol::query();
+        $query  = Symbol::query()->select(['id', 'name', 'symbol', 'base_asset', 'quote_asset', 'coin_id', 'binance_symbol', 'digits', 'self_data', 'status', 'created_at', 'updated_at']);
         if ($status !== null) {
             $query->where('status', $status);
         }
