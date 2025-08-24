@@ -104,7 +104,7 @@ class MarketController extends ApiController {
 
         $status = $request->get('status', null);
         $name   = $request->get('name', '');
-        $query  = Symbol::query()->select(['id', 'name', 'symbol', 'base_asset', 'quote_asset', 'coin_id', 'binance_symbol', 'digits', 'self_data', 'status', 'created_at']);
+        $query  = Symbol::query();
         if ($status !== null) {
             $query->where('status', $status);
         }
@@ -112,7 +112,7 @@ class MarketController extends ApiController {
             $query->where('name', 'like', '%' . $name . '%');
         }
 
-        $data = $query->orderBy('created_at')->paginate($request->get('page_size'), ['*'], null, $request->get('page'));
+        $data = $query->orderBy('created_at')->paginate($request->get('page_size'), ['*'], null, $request->get('page'))->makeVisible(['self_data']);
         return $this->ok(listResp($data));
     }
 
