@@ -41,7 +41,7 @@ class MessageSend {
     }
 
     private function textPrefix() {
-        return "[AnexoCC] Der Code zur Bestätigung lautet: %s";
+        return "[CoinVitaX] Ihr Bestätigungscode lautet: %s"
     }
     
 }
