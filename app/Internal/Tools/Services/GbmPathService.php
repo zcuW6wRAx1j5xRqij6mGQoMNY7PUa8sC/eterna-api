@@ -98,7 +98,10 @@ final class GbmPathService {
             
             // 是否直接获取价格数据
             if ($getPrices) {
-                $prices[count($prices) - 1] = $endClose;
+                foreach ($prices as $i => $price) {
+                    $prices[$i] = number_format($price, $scale);
+                }
+                $prices[count($prices) - 1] = number_format($endClose, $scale);
                 return $prices;
             }
             
