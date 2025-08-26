@@ -87,7 +87,8 @@ class InfluxDB
      * @throws InvalidArgumentException 
      * @throws ApiException 
      */
-    public function writeData(string $symbol, string $interval,array $kline) {
+    public function writeData(string $symbol, string $interval,array $kline): true
+    {
 
         // kline 示例
         // $kline = [
