@@ -89,7 +89,7 @@ class InfluxDB
      */
     public function writeData(string $symbol, string $interval,array $kline) {
         $w = $this->client->createWriteApi();
-        $point = Point::measurement($symbol)
+        $point = Point::measurement('kline')
             ->addTag("symbol", $symbol)
             ->addTag("interval", $interval)
             ->addField("o", $kline['o'])
