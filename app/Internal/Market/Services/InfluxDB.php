@@ -3,8 +3,10 @@
 namespace Internal\Market\Services;
 
 use App\Exceptions\LogicException;
+use InfluxDB2\WriteType as WriteType;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
+use InfluxDB2\ApiException;
 use InfluxDB2\Client;
 use InfluxDB2\FluxQueryError;
 use InfluxDB2\FluxCsvParserException;
@@ -15,6 +17,7 @@ use InfluxDB2\Service\DeleteService;
 use InvalidArgumentException;
 use RuntimeException;
 
+/** @package Internal\Market\Services */
 class InfluxDB
 {
 
@@ -72,6 +75,50 @@ class InfluxDB
         $predicate->setPredicate('_measurement="kline" AND symbol="zfsusdt"');
         $srv->postDelete($predicate, null, $this->org, $this->bucket);
         $this->client->close();
+        return true;
+    }
+
+    /**
+     * 写入数据
+     * @param string $symbol 
+     * @param string $interval 
+     * @param array $kline 
+     * @return true 
+     * @throws InvalidArgumentException 
+     * @throws ApiException 
+     */
+    public function writeData(string $symbol, string $interval,array $kline) {
+
+        // kline 示例
+        // $kline = [
+        //     [
+        //         'o' => 0.1942,
+        //         'c' => 0.1953,
+        //         'h' => 0.1953,
+        //         'l' => 0.1942,
+        //         'v' => 1997,
+        //         'tl' => 1742846520000,
+        //     ],
+        // ];
+
+        $w = $this->client->createWriteApi(
+            ["writeType" => WriteType::BATCHING, 'batchSize' => 1000]
+        );
+        
+        foreach ($kline as $item) {
+            $point = Point::measurement($symbol)
+                ->addTag("symbol", $symbol)
+                ->addTag("interval", $interval)
+                ->addField("o", $item['o'])
+                ->addField("c", $item['c'])
+                ->addField("h", $item['h'])
+                ->addField("l", $item['l'])
+                ->addField("v", $item['v'])
+                ->addField("tl", $item['tl']) // 毫秒
+                ->time($item['tl'], WritePrecision::MS);
+            $w->write($point);
+        }
+        $w->close();
         return true;
     }
 
