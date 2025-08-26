@@ -46,8 +46,8 @@ class Kline {
 
     /**
      * 获取所有交易对的K线
-     * @param string $symbolType 
-     * @return mixed 
+     * @param string $symbolType
+     * @return mixed
      */
     public function allSymbolSimpleKline(string $symbolType, array $symbolIds) {
         $data = Cache::remember(sprintf(self::CacheKeyAllSymbols,$symbolType),self::CacheKeyAllSymbolsTTL,function() use($symbolType){
@@ -96,7 +96,7 @@ class Kline {
         });
         return $data;
     }
-    
+
     private function getQueryStart(string $interval){
         switch ($interval) {
             case IntervalEnums::Interval1Minute:
@@ -109,7 +109,7 @@ class Kline {
                 return "-2d";
             break;
             case IntervalEnums::Interval30Minutes:
-                return "-1w";
+                return "-1y";
             break;
             case IntervalEnums::Interval1Hour:
                 return "-1mo";
