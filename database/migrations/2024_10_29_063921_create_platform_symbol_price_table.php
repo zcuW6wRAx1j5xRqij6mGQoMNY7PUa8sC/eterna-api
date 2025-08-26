@@ -13,10 +13,7 @@ return new class extends Migration
     {
         Schema::create('platform_symbol_price', function (Blueprint $table) {
             $table->id();
-            $table->char('symbol_type')->comment('symbol类型 spot 现货 futures 合约');
             $table->bigInteger('symbol_id')->comment('symbol ID');
-            $table->bigInteger('spot_id')->default(0)->comment('现货ID');
-            $table->bigInteger('futures_id')->default(0)->comment('合约ID');
             $table->timestamp('start_time')->nullable()->comment('开始时间');
             $table->bigInteger('duration_time')->default(0)->comment('持续时间 : 分钟');
             $table->decimal('fake_price',20,8)->default(0)->comment('控盘价格');

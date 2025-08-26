@@ -5,7 +5,9 @@ namespace App\Enums;
 class PhoneCodeEnums {
 
     const Maps = [
-        "+1"=>"001",
+            "+49"=>"0049",   // 德国 (Germany)
+            "+33"=>"0033",   // 法国 (France)
+            "+1"=>"001",
             "+43"=>"0043",   // 奥地利 (Austria)
             "+32"=>"0032",   // 比利时 (Belgium)
             "+359"=>"00359", // 保加利亚 (Bulgaria)
@@ -15,8 +17,6 @@ class PhoneCodeEnums {
             "+45"=>"0045",   // 丹麦 (Denmark)
             "+372"=>"00372", // 爱沙尼亚 (Estonia)
             "+358"=>"00358", // 芬兰 (Finland)
-            "+33"=>"0033",   // 法国 (France)
-            "+49"=>"0049",   // 德国 (Germany)
             "+30"=>"0030",   // 希腊 (Greece)
             "+36"=>"0036",   // 匈牙利 (Hungary)
             "+353"=>"00353", // 爱尔兰 (Ireland)

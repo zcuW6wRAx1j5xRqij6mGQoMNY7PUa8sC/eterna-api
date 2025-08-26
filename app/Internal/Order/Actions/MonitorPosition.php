@@ -22,6 +22,7 @@ class MonitorPosition {
             's'=>(string)$userOrderFutures->side,
             'sl'=>floatTransferString($userOrderFutures->sl ?? 0),
             'tp'=>floatTransferString($userOrderFutures->tp ?? 0),
+            'l'=>floatTransferString($userOrderFutures->leverage ?? 0),
         ];
         $key = sprintf(OrderEnums::DerivativeOrderMonitorKey, strtolower($userOrderFutures->symbol->binance_symbol));
         $redis->hset($key,$userOrderFutures->id,json_encode($data));

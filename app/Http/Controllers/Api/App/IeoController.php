@@ -67,7 +67,7 @@ class IeoController extends ApiController
     {
         $request->validate([
             'id' => 'required|numeric',
-            'amount' => 'required|numeric',
+            'amount' => 'required|string',
         ]);
 
         DB::transaction(function () use ($request) {

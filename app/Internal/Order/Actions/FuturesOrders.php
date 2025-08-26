@@ -31,7 +31,7 @@ class FuturesOrders {
         if ($tradeType) {
             $query->where('trade_type', $tradeType);
         }
-        if ($status) {
+        if ($status && $status != 'all') {
             $query->where('trade_status', $status);
         }
         $data = $query->orderByDesc('created_at')->get();

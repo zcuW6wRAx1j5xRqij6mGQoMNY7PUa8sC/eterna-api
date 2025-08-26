@@ -31,6 +31,9 @@ class SubmitWithdraw
             $amount = parseNumber($amount);
             $walletAddr = $request->get('wallet_address');
 
+            if ($amount <= 0) {
+                throw new LogicException(__('Amount is invalid'));
+            }
             
             $platform = PlatformWallet::find($walletId);
             if (!$platform) {

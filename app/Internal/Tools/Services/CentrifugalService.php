@@ -13,7 +13,7 @@ use phpcent\Client;
 class CentrifugalService{
 
     const JWTAud = 'centrifugo';
-    const JWTISS = 'anexocc';
+    const JWTISS = 'market';
     private $hmacKey = '';
     private $apiKey = '';
     private $apiPath = '';

@@ -2,6 +2,7 @@
 
 namespace App\Internal\Tools\Services;
 
+use Carbon\CarbonImmutable;
 use App\Exceptions\LogicException;
 use Exception;
 use Throwable;
@@ -9,6 +10,7 @@ use Carbon\Carbon;
 use App\Models\Symbol;
 use App\Enums\CommonEnums;
 use Illuminate\Support\Facades\Cache;
+use Internal\Market\Services\InfluxDB;
 use App\Models\BotTask as ModelsBotTask;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -193,6 +195,7 @@ class BotTask {
     }
     
     public function generateHistoryData(
+        string $symbol,
         float  $startOpen,
         float  $targetHigh,
         float  $targetLow,
@@ -215,11 +218,12 @@ class BotTask {
                 targetHigh: $targetHigh,
                 targetLow: $targetLow,
                 sigma: $sigma,
+                scale: $scale
             );
         }
         $maxStep = count($days) - 1;
         // 生成价格
-        $prices = GbmPathService::generateCandles(
+        $prices    = GbmPathService::generateCandles(
             startOpen: $startOpen,
             endClose: $endClose,
             startTime: $startTime,
@@ -228,9 +232,11 @@ class BotTask {
             targetLow: $targetLow,
             sigma: $sigma,
             intervalSeconds: 86400,
+            scale: $scale,
             getPrices: true,
             maxStep: $maxStep
         );
+        $klineData = [];
         // 按天生成每秒价格
         for ($i = 0; $i < count($prices) - 1; $i++) {
             $open  = $prices[$i];
@@ -243,7 +249,8 @@ class BotTask {
             } else if ($low > $open) {
                 $low = $open;
             }
-            $kline = GbmPathService::generateCandles(
+            
+            $kline   = GbmPathService::generateCandles(
                 startOpen: $open,
                 endClose: $close,
                 startTime: $days[$i],
@@ -251,43 +258,12 @@ class BotTask {
                 targetHigh: $high,
                 targetLow: $low,
                 sigma: $sigma,
-                microSeconds: false
+                scale: $scale,
+                short: true
             );
-            dd($kline);
-            /**
-             * getPrice=true
-             * array:61 [▼ // app/Internal/Tools/Services/BotTask.php:257
-             * 0 => "50.00000"
-             * 1 => "50.01109"
-             * 2 => "50.00010"
-             * 3 => "50.00232"
-             * 4 => "50.03116"
-             * 5 => "50.01592"
-             * 6 => "50.01170"
-             * 7 => "50.00043"
-             */
-            /**
-             * getPrice=false
-             *array:60 [▼ // app/Internal/Tools/Services/BotTask.php:256
-             * 0 => array:5 [▼
-             * "open" => "50.00000"
-             * "high" => "51.31192"
-             * "low" => "50.00000"
-             * "close" => "51.31192"
-             * "timestamp" => 1756223940
-             * ]
-             * 1 => array:5 [▼
-             * "open" => "51.31192"
-             * "high" => "52.62956"
-             * "low" => "51.31192"
-             * "close" => "52.62956"
-             * "timestamp" => 1756223941
-             * ]
-             * ]
-             */
-            //todo 处理 Kline 数据
+            $minutes = $this->aggregates($kline, ['1m']);
+            InfluxDB::writeData($symbol, '1m', $minutes['1m']);
         }
-        return $prices;
     }
     
     public function calcDays(string $start, string $end): array|int
@@ -317,5 +293,85 @@ class BotTask {
             $timeData[] = $end->copy()->toDateTimeString();
         }
         return $timeData;
+    }
+    
+    private function aggregates(array $rows, array $intervals = ['1m', '5m', '15m', '30m', '1h', '1d', '1w', '1M']): array
+    {
+        if (empty($rows)) {
+            return [];
+        }
+        
+        // 按时间升序，确保以第一条为起点
+        usort($rows, static fn($a, $b) => (int)($a['tl'] ?? 0) <=> (int)($b['tl'] ?? 0));
+        
+        $t0Ms = (int)($rows[0]['tl'] ?? 0);
+        $t0   = CarbonImmutable::createFromTimestampMs($t0Ms);
+        
+        // 周期对应的毫秒数
+        $allPeriods = [
+            '1m'  => 60_000,
+            '5m'  => 5 * 60_000,
+            '15m' => 15 * 60_000,
+            '30m' => 30 * 60_000,
+            '1h'  => 60 * 60_000,
+            '1d'  => 24 * 60 * 60_000,
+            '1w'  => 7 * 24 * 60 * 60_000,
+            '1M'  => 30 * 24 * 60 * 60_000,
+        ];
+        // 仅保留请求的周期
+        $periods = array_intersect_key($allPeriods, array_flip($intervals));
+        if (empty($periods)) {
+            return [];
+        }
+        
+        // 结果桶
+        // key = bucketStartMs, value = K线
+        $buckets = array_map(function ($ms) {
+            return [];
+        }, $periods);
+        
+        foreach ($rows as $row) {
+            $tMs = (int)($row['tl'] ?? 0);
+            
+            // 如果仍拿不到有效价格，跳过
+            if (!is_numeric($row['o']) || !is_numeric($row['h']) || !is_numeric($row['l']) || !is_numeric($row['c'])) {
+                continue;
+            }
+            
+            foreach ($periods as $label => $periodMs) {
+                // 以第一条时间为起点进行“偏移对齐”
+                $index         = intdiv($tMs - $t0Ms, $periodMs);          // 第几个周期
+                $bucketStart   = $t0->addMilliseconds($index * $periodMs); // Carbon 生成开始时间
+                $bucketStartMs = $bucketStart->getTimestampMs();
+                
+                if (!isset($buckets[$label][$bucketStartMs])) {
+                    $buckets[$label][$bucketStartMs] = [
+                        'tl' => $bucketStartMs,
+                        'o'  => (float)$row['o'],
+                        'h'  => (float)$row['h'],
+                        'l'  => (float)$row['l'],
+                        'c'  => (float)$row['c'],
+                        'v'  => (int)$row['v'],
+                    ];
+                } else {
+                    $kline = &$buckets[$label][$bucketStartMs];
+                    // open 保持首笔
+                    $kline['h'] = max($kline['h'], (float)$row['h']);
+                    $kline['l'] = min($kline['l'], (float)$row['l']);
+                    $kline['c'] = (float)$row['c'];          // close 为该桶内最后一笔
+                    $kline['v'] += $row['v'];
+                    unset($kline);                           // 释放引用
+                }
+            }
+        }
+        
+        // 输出按时间排序的数组
+        $out = [];
+        foreach ($buckets as $label => $map) {
+            ksort($map);
+            $out[$label] = array_values($map);
+        }
+        
+        return $out;
     }
 }

@@ -48,7 +48,7 @@ class OtcController extends ApiController
     public function trade(Request $request, CreateOtcOrder $createOtcOrder) {
         $request->validate([
             'product_id'        => 'required|numeric',
-            'quantity'          => 'required|numeric',
+            'quantity'          => 'required|string',
             'payment_method'    => 'required|string',
             'comments'          => 'nullable|string',
             'trade_type'        => ['required', Rule::in(OrderEnums::CommonTradeTypeMap)],

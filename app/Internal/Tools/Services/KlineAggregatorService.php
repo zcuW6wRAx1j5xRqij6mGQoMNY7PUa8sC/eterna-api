@@ -21,7 +21,7 @@ final class KlineAggregatorService {
      * @return array<string,array<int,array<string,mixed>>>
      *   返回结构: ['1m'=>[['t'=>ms,'time'=>iso,'o'=>...,'h'=>...,'l'=>...,'c'=>...],...], '5m'=>[...], ...]
      */
-    public static function aggregate(array $rows, array $intervals = ['1m', '5m', '15m', '30m', '1h', '1d']): array
+    public static function aggregate(array $rows, array $intervals = ['1m', '5m', '15m', '30m', '1h', '1d', '1w', '1M']): array
     {
 //        if ($rows instanceof Collection) {
 //            $rows = $rows->all();
@@ -44,6 +44,8 @@ final class KlineAggregatorService {
             '30m' => 30 * 60_000,
             '1h'  => 60 * 60_000,
             '1d'  => 24 * 60 * 60_000,
+            '1w'  => 7 * 24 * 60 * 60_000,
+            '1M'  => 30 * 24 * 60 * 60_000,
         ];
         // 仅保留请求的周期
         $periods = array_intersect_key($allPeriods, array_flip($intervals));

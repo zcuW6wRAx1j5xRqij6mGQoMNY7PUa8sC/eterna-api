@@ -37,7 +37,28 @@ if (!function_exists('listResp')) {
      * @return string 
      */
     function parseNumber($num) {
+        $num = str_replace('.', '', $num);
         $num = str_replace(',', '.', $num);
+
+        if (!is_numeric($num)) {
+            return 0;
+        }
+        return number_format(abs($num), FundsEnums::DecimalPlaces,'.','');
+
+        $lastDot   = strrpos($num, '.');
+        $lastComma = strrpos($num, ',');
+        if ($lastDot !== false && $lastComma !== false) {
+            // 同时存在 . 和 ,  则确定是 欧洲格式
+            // 先去掉千分位
+            $num = str_replace('.', '', $num);
+            $num = str_replace(',', '.', $num);
+        } else {
+            $num = str_replace(',', '.', $num);
+        }
+
+        if (!is_numeric($num)) {
+            return 0;
+        }
         return number_format(abs($num), FundsEnums::DecimalPlaces,'.','');
     }
 }

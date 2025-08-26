@@ -43,7 +43,8 @@ final class GbmPathService {
         ?int                     $scale = 5,
         ?bool                    $getPrices = false,
         ?int                     $maxStep = 0,
-        ?bool                    $microSeconds = true
+        ?bool                    $microSeconds = true,
+        ?bool                    $short = false,
     ): array
     {
         try {
@@ -123,13 +124,25 @@ final class GbmPathService {
                 // $high = min($hi, max($high, $lo));
                 // $low = max($lo, min($low, $hi));
                 $timestamp = $microSeconds ? $time->copy()->timestamp * 1000 : $time->copy()->timestamp;
-                $candles[] = [
-                    'open'      => number_format($open, $scale),
-                    'high'      => number_format($high, $scale),
-                    'low'       => number_format($low, $scale),
-                    'close'     => number_format($i == ($n - 1) ? $endClose : $close, $scale),
-                    'timestamp' => $timestamp,
-                ];
+                if ($short) {
+                    $item = [
+                        'o'  => number_format($open, $scale),
+                        'h'  => number_format($high, $scale),
+                        'l'  => number_format($low, $scale),
+                        'c'  => number_format($i == ($n - 1) ? $endClose : $close, $scale),
+                        'v'  => rand(0, 1000),
+                        'tl' => $timestamp,
+                    ];
+                } else {
+                    $item = [
+                        'open'      => number_format($open, $scale),
+                        'high'      => number_format($high, $scale),
+                        'low'       => number_format($low, $scale),
+                        'close'     => number_format($i == ($n - 1) ? $endClose : $close, $scale),
+                        'timestamp' => $timestamp,
+                    ];
+                }
+                $candles[] = $item;
                 
                 $time = $time->addSeconds($intervalSeconds);
             }

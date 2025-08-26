@@ -50,7 +50,17 @@ class MarketController extends ApiController {
      */
     public function simpleSymbols(Request $request)
     {
-        $data = Symbol::select(['id', 'name', 'symbol', 'binance_symbol'])->where('quote_asset', 'usdt')->where('status', CommonEnums::Yes)->get();
+        $request->validate([
+            'keyword' => 'nullable|string',
+        ]);
+        
+        $keyword = $request->get('keyword');
+        
+        $query = Symbol::select(['id', 'name', 'symbol', 'binance_symbol'])->where('status', CommonEnums::Yes);
+        if ($keyword) {
+            $query->where('symbol', 'like', '%' . $keyword . '%');
+        }
+        $data = $query->get();
         return $this->ok($data);
     }
     
@@ -103,7 +113,16 @@ class MarketController extends ApiController {
         }
         
         $data = $query->orderBy('created_at')->paginate($request->get('page_size'), ['*'], null, $request->get('page'));
-        return $this->ok(listResp($data));
+        return $this->ok(listResp($data, function ($items) {
+            $i = $items['items'] ?? [];
+            if ($i) {
+                $items['items'] = collect($i)->map(function ($item) {
+                    $item->_self_data = $item->self_data ?? '';
+                    return $item;
+                });
+            }
+            return $items;
+        }));
     }
     
     public function fakePrice(Request $request)
@@ -313,17 +332,62 @@ class MarketController extends ApiController {
     public function modifySymbols(Request $request)
     {
         $request->validate([
-            'id'     => 'required|numeric',
-            'status' => ['nullable', Rule::in([CommonEnums::Yes, CommonEnums::No])],
+            'id'          => 'nullable|numeric',
+            'base_asset'  => 'required|string',
+            'quote_asset' => 'required|string',
+            'self_data'   => ['required', Rule::in([CommonEnums::Yes, CommonEnums::No])],
+            'status'      => ['nullable', Rule::in([CommonEnums::Yes, CommonEnums::No])],
         ]);
         
-        $status = $request->get('status', null);
-        $symbol = Symbol::findOrFail($request->get('id'));
-        
-        if ($status !== null) {
-            $symbol->status = $status;
-        }
-        $symbol->save();
+        DB::transaction(function () use ($request) {
+            $id         = $request->get('id');
+            $baseAsset  = $request->get('base_asset');
+            $quoteAsset = $request->get('quote_asset');
+            $selfData   = $request->get('self_data');
+            $status     = $request->get('status', null);
+            
+            $symbolModel = null;
+            
+            if ($id) {
+                $symbolModel = Symbol::find($id);
+                if (!$symbolModel) {
+                    throw new LogicException('数据不正确');
+                }
+            } else {
+                $symbolModel = new Symbol();
+            }
+            
+            $name   = strtoupper($baseAsset) . '/' . strtoupper($quoteAsset);
+            $symbol = strtolower($baseAsset) . strtolower($quoteAsset);
+            if ($selfData != CommonEnums::Yes) {
+                $binanceSymbol = strtoupper($baseAsset) . strtoupper($quoteAsset);
+            }
+            
+            $symbolExists = Symbol::where('symbol', $symbol)->exists();
+            if ($id && $symbolExists && $symbolExists->id != $id) {
+                throw new LogicException('交易对已存在');
+            }
+            if ($symbolExists) {
+                throw new LogicException('交易对已存在');
+            }
+            
+            $symbolCoin = SymbolCoin::where('name', strtoupper($baseAsset))->first();
+            if (!$symbolCoin) {
+                $symbolCoin        = new SymbolCoin();
+                $symbolCoin->name  = strtoupper($baseAsset);
+                $symbolCoin->block = strtoupper($baseAsset);
+                $symbolCoin->save();
+            }
+            
+            $symbolModel->name           = $name;
+            $symbolModel->symbol         = $symbol;
+            $symbolModel->coin_id        = $symbolCoin->id;
+            $symbolModel->binance_symbol = $binanceSymbol ?? null;
+            $symbolModel->self_data      = $selfData;
+            $symbolModel->status         = $status;
+            $symbolModel->save();
+            return true;
+        });
         return $this->ok(true);
     }
     
@@ -667,28 +731,25 @@ class MarketController extends ApiController {
     public function createNewBotTask(Request $request, ServicesBotTask $service): JsonResponse
     {
         $coinID     = $request->input('coin_id', 2755);
-        $coinType   = $request->input('coin_type', 'spot');
         $open       = $request->input('open', 50);
         $targetHigh = $request->input('high', 140);
         $targetLow  = $request->input('low', 10);
         $close      = $request->input('close', 100);
-        $startTime  = $request->input('start_time', '2025-08-26 23:59:00');
-        $endTime    = $request->input('end_time', '2025-08-31 23:59:59');
+        $startTime  = $request->input('start_time', '2025-08-26 00:00:00');
+        $endTime    = $request->input('end_time', '2025-08-28 00:00:00');
         $sigma      = $request->input('sigma', 0.0003);
-        $result     = $service->generateHistoryData(
+        $symbol     = Symbol::query()->where('id', $coinID)->value('symbol');
+        $service->generateHistoryData(
+            $symbol,
             $open,
             $targetHigh,
             $targetLow,
             $close,
             $startTime,
             $endTime,
-            $sigma
+            $sigma,
+            8
         );
-        dd($result);
-
-        if ($result) {
-            return $this->fail($result);
-        }
         return $this->ok();
     }
     
