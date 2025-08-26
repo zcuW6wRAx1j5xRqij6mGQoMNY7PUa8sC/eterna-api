@@ -746,7 +746,7 @@ class MarketController extends ApiController {
         $endTime    = $request->input('end_time');
         $sigma      = $request->input('sigma', 0.0003);
         $unit       = $request->input('unit', '1m');
-        $symbol     = Symbol::query()->where('id', $coinID)->value('symbol');
+        $symbol     = Symbol::query()->where('id', $coinID)->value('binance_symbol');
         $service->generateHistoryData(
             $symbol,
             $open,
