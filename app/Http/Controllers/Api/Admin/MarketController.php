@@ -731,7 +731,7 @@ class MarketController extends ApiController {
     
     public function createNewBotTask(Request $request, ServicesBotTask $service): JsonResponse
     {
-        (new InfluxDB('market_spot'))->writeData('dddusdc', '1h', [
+        (new InfluxDB('market_spot'))->writeData('dddusdc', '1d', [
             [
                 'tl' => time() * 1000,
                 'c'  => 400,
@@ -741,6 +741,7 @@ class MarketController extends ApiController {
                 'v'  => 1000,
             ],
         ]);
+        return $this->ok();
         $coinID     = $request->input('coin_id');
         $open       = $request->input('open');
         $targetHigh = $request->input('high');
