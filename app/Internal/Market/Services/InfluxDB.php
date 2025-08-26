@@ -66,13 +66,13 @@ class InfluxDB
     //     return self::$ins;
     // }
 
-    public function deleteData()
+    public function deleteData(string $symbol)
     {
         $srv = $this->client->createService(DeleteService::class);
         $predicate = new DeletePredicateRequest();
         $predicate->setStart(Carbon::now()->subYears(30)->toRfc3339String());
         $predicate->setStop(Carbon::now()->toRfc3339String());
-        $predicate->setPredicate('_measurement="kline" AND symbol="zfsusdt"');
+        $predicate->setPredicate(sprintf('_measurement="kline" AND symbol="%s"', $symbol));
         $srv->postDelete($predicate, null, $this->org, $this->bucket);
         $this->client->close();
         return true;
