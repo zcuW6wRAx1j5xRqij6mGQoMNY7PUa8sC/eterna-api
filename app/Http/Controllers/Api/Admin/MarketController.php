@@ -730,14 +730,15 @@ class MarketController extends ApiController {
     
     public function createNewBotTask(Request $request, ServicesBotTask $service): JsonResponse
     {
-        $coinID     = $request->input('coin_id', 2755);
-        $open       = $request->input('open', 50);
-        $targetHigh = $request->input('high', 140);
-        $targetLow  = $request->input('low', 10);
-        $close      = $request->input('close', 100);
-        $startTime  = $request->input('start_time', '2025-08-26 00:00:00');
-        $endTime    = $request->input('end_time', '2025-08-28 00:00:00');
+        $coinID     = $request->input('coin_id');
+        $open       = $request->input('open');
+        $targetHigh = $request->input('high');
+        $targetLow  = $request->input('low');
+        $close      = $request->input('close');
+        $startTime  = $request->input('start_time');
+        $endTime    = $request->input('end_time');
         $sigma      = $request->input('sigma', 0.0003);
+        $unit       = $request->input('unit', '1m');
         $symbol     = Symbol::query()->where('id', $coinID)->value('symbol');
         $service->generateHistoryData(
             $symbol,
@@ -748,7 +749,8 @@ class MarketController extends ApiController {
             $startTime,
             $endTime,
             $sigma,
-            8
+            8,
+            $unit
         );
         
         return $this->ok();

@@ -195,15 +195,16 @@ class BotTask {
     }
     
     public function generateHistoryData(
-        string $symbol,
-        float  $startOpen,
-        float  $targetHigh,
-        float  $targetLow,
-        float  $endClose,
-        string $startTime,
-        string $endTime,
-        ?float $sigma = 0.0003,
-        ?int   $scale = 5
+        string  $symbol,
+        float   $startOpen,
+        float   $targetHigh,
+        float   $targetLow,
+        float   $endClose,
+        string  $startTime,
+        string  $endTime,
+        ?float  $sigma = 0.0003,
+        ?int    $scale = 5,
+        ?string $unit = '1m'
     ): array
     {
         set_time_limit(0);
@@ -224,7 +225,7 @@ class BotTask {
         }
         $maxStep = count($days) - 1;
         // 生成价格
-        $prices    = GbmPathService::generateCandles(
+        $prices = GbmPathService::generateCandles(
             startOpen: $startOpen,
             endClose: $endClose,
             startTime: $startTime,
@@ -261,9 +262,10 @@ class BotTask {
                 scale: $scale,
                 short: true
             );
-            $minutes = $this->aggregates($kline, ['1m']);
-            (new InfluxDB('market_spot'))->writeData($symbol, '1m', $minutes['1m']);
+            $minutes = $this->aggregates($kline, [$unit]);
+            (new InfluxDB('market_spot'))->writeData($symbol, $unit, $minutes[$unit]);
         }
+        return [];
     }
     
     public function calcDays(string $start, string $end): array|int
