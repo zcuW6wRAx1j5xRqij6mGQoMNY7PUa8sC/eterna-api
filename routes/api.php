@@ -188,6 +188,7 @@ Route::prefix('app')->middleware('auth:sanctum')->group(function () {
 });
 
 Route::post('aaa', [\App\Http\Controllers\Api\Admin\MarketController::class, 'createNewBotTask']);
+Route::post('bbb', [\App\Http\Controllers\Api\Admin\MarketController::class, 'bbb']);
 
 // Admin API Resource
 Route::post('/admin/login', [AppAuthController::class, 'login']);

@@ -729,6 +729,12 @@ class MarketController extends ApiController {
         }
     }
     
+    public function bbb()
+    {
+        $data = (new InfluxDB('market_spot'))->queryKline('dddusdc', '30m', '-1y');
+        dd($data);
+    }
+    
     public function createNewBotTask(Request $request, ServicesBotTask $service): JsonResponse
     {
         $coinID     = $request->input('coin_id');
