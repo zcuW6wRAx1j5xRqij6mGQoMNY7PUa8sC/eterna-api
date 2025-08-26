@@ -733,7 +733,7 @@ class MarketController extends ApiController {
     {
         (new InfluxDB('market_spot'))->writeData('dddusdc', '1d', [
             [
-                'tl' => time() * 1000,
+                'tl' => (time()-5*86400) * 1000,
                 'c'  => 400.01,
                 'h'  => 410.01,
                 'l'  => 390.01,
