@@ -16,7 +16,7 @@ class SendEmailCaptcha extends Mailable
     /**
      * Create a new message instance.
      */
-    public function __construct(public string $code,public string $warning, public string $notice )
+    public function __construct(public string $code)
     {
 
     }

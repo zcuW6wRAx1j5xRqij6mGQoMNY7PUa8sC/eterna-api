@@ -66,6 +66,10 @@ return [
                 'timeout' => 5,
             ],
         ],
+        'resend' => [
+            'transport' => 'resend',
+        ],
+
 
         'sendcloud'=>[
             'transport' => 'sendcloud',
