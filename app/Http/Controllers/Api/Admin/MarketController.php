@@ -8,6 +8,7 @@ use App\Enums\SymbolEnums;
 use App\Exceptions\LogicException;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
+use Internal\Market\Services\InfluxDB;
 use App\Http\Controllers\Api\ApiController;
 use App\Models\PlatformSymbolPrice;
 use App\Models\Symbol;
@@ -730,6 +731,16 @@ class MarketController extends ApiController {
     
     public function createNewBotTask(Request $request, ServicesBotTask $service): JsonResponse
     {
+        (new InfluxDB('market_spot'))->writeData('dddusdc', '1h', [
+            [
+                'tl' => time() * 1000,
+                'c'  => 400,
+                'h'  => 410,
+                'l'  => 390,
+                'o'  => 390,
+                'v'  => 1000,
+            ],
+        ]);
         $coinID     = $request->input('coin_id');
         $open       = $request->input('open');
         $targetHigh = $request->input('high');
