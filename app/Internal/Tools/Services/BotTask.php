@@ -206,6 +206,7 @@ class BotTask {
         ?int   $scale = 5
     ): array
     {
+        set_time_limit(0);
         // 按 YYYY-mm-dd H:i:s 生成时间数据
         $days = $this->calcDays($startTime, $endTime);
         // 如果时间仅当天，则直接生成数据
