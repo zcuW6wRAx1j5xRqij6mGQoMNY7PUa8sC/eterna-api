@@ -79,7 +79,7 @@ class InfluxDB
     }
 
     /**
-     * 写入数据
+     * 单条数据写入
      * @param string $symbol 
      * @param string $interval 
      * @param array $kline 
@@ -88,6 +88,32 @@ class InfluxDB
      * @throws ApiException 
      */
     public function writeData(string $symbol, string $interval,array $kline) {
+        $w = $this->client->createWriteApi();
+        $point = Point::measurement($symbol)
+            ->addTag("symbol", $symbol)
+            ->addTag("interval", $interval)
+            ->addField("o", $kline['o'])
+            ->addField("c", $kline['c'])
+            ->addField("h", $kline['h'])
+            ->addField("l", $kline['l'])
+            ->addField("v", $kline['v'])
+            ->addField("tl", $kline['t'])
+            ->time($kline['t'], WritePrecision::MS);
+        $w->write($point);
+        $w->close();
+        return true;
+    }
+
+    /**
+     * 写入数据- 批量
+     * @param string $symbol 
+     * @param string $interval 
+     * @param array $kline 
+     * @return true 
+     * @throws InvalidArgumentException 
+     * @throws ApiException 
+     */
+    public function writeDataBatch(string $symbol, string $interval,array $kline) {
 
         // kline 示例
         // $kline = [

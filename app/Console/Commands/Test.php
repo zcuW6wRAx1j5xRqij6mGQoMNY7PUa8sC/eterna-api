@@ -4,6 +4,7 @@
 namespace App\Console\Commands;
 
 use App\Enums\FundsEnums;
+use App\Enums\MarketEnums;
 use App\Events\UserCreated;
 use App\Models\AdminUser;
 use App\Models\User;
@@ -20,7 +21,10 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Internal\Common\Actions\SendCloud;
+use Internal\Market\Actions\GenerateKline;
+use Internal\Market\Actions\Kline;
 use Internal\Market\Services\BinanceService;
+use Internal\Market\Services\InfluxDB;
 use Internal\Order\Actions\TradeCalculator;
 use Internal\Pay\Services\UdunService;
 use Internal\Tools\Services\CentrifugalService;
@@ -47,8 +51,36 @@ class Test extends Command
      */
     public function handle()
     {
+        $srv = new GenerateKline(
+            '2024-01-01 00:00:00',
+            '2024-12-31 23:59:59',
+            0.5100,     // high
+            0.0500,     // low
+            0.1000,     // startPrice
+            0.5000,     // endPrice
+            9527       // seed (optional)
+        );
 
-         for ($i=1;$i<=100;$i++) {
+        $srv->addCallbackSink('5m',function($bar){
+            $bar['t'] = $bar['t'].'000';
+            (new InfluxDB(MarketEnums::SpotInfluxdbBucket))->writeData('gggusdc','5m',$bar);
+        });
+        // $srv->addCallbackSink('1m',function($bar){
+        //     $bar['t'] = $bar['t'].'000';
+        //     (new InfluxDB(MarketEnums::SpotInfluxdbBucket))->writeData('gggusdt','1m',$bar);
+        // });
+        $t0 = microtime(true);
+        $srv->run();
+        $srv->close();
+        $dt = microtime(true) - $t0;
+        dd('ok');
+        // fwrite(STDERR, "Done in ".number_format($dt,2)."s\n");
+
+
+
+        $result = $srv->generate();
+        dd($result);
+        for ($i=1;$i<=100;$i++) {
             $curEmail = 'test_'.$i.'@gmail.com';
             $curUser = User::where('email', $curEmail)->first();
             if ($curUser) {
