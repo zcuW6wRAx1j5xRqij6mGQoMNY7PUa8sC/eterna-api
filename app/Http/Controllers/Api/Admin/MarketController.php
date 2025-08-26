@@ -664,7 +664,7 @@ class MarketController extends ApiController {
         }
     }
     
-    public function createNewBotTask(Request $request): JsonResponse
+    public function createNewBotTask(Request $request, ServicesBotTask $service): JsonResponse
     {
         $coinID     = $request->input('coin_id', 2755);
         $coinType   = $request->input('coin_type', 'spot');
@@ -672,44 +672,20 @@ class MarketController extends ApiController {
         $targetHigh = $request->input('high', 140);
         $targetLow  = $request->input('low', 10);
         $close      = $request->input('close', 100);
-        $startTime  = $request->input('start_time', '2025-08-26 00:00:00');
-        $endTime    = $request->input('end_time', '2025-09-10 23:59:59');
+        $startTime  = $request->input('start_time', '2025-08-26 23:59:00');
+        $endTime    = $request->input('end_time', '2025-08-31 23:59:59');
         $sigma      = $request->input('sigma', 0.0003);
-        
-        $startDate = Carbon::parseFromLocale($startTime);
-        $endDate   = Carbon::parseFromLocale($endTime);
-        $offset    = ceil($endDate->diffInSeconds($startDate) / 86400);
-        
-        $getPrice = $offset >= 2;
-        $prices   = GbmPathService::generateCandles(
-            startOpen: $open,
-            endClose: $close,
-            startTime: $startTime,
-            endTime: $endTime,
-            targetHigh: $targetHigh,
-            targetLow: $targetLow,
-            sigma: $sigma,
-            intervalSeconds: $getPrice ? 86400 : 1,
-            getPrices: $getPrice
+        $result     = $service->generateHistoryData(
+            $open,
+            $targetHigh,
+            $targetLow,
+            $close,
+            $startTime,
+            $endTime,
+            $sigma
         );
-        $days     = [];
-        if ($getPrice) {
-            for ($i = 0; $i < $offset; $i++) {
-                $start = $startDate->copy()->toDateTimeString();
-                $startDate->addDay();
-                $end  = $i == ($offset - 1) ? $endTime : $startDate->copy()->toDateTimeString();
-                $data = GbmPathService::generateCandles(
-                    startOpen: $prices[$i],
-                    endClose: $prices[$i + 1],
-                    startTime: $start,
-                    endTime: $end,
-                    targetHigh: $targetHigh,
-                    targetLow: $targetLow,
-                    sigma: $sigma,
-                );
-                dd($start, $end, $data[0], end($data), $prices);
-            }
-        }
+        dd($result);
+
         if ($result) {
             return $this->fail($result);
         }

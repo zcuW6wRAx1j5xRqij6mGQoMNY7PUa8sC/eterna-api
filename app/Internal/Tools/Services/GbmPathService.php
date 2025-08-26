@@ -41,17 +41,20 @@ final class GbmPathService {
         float                    $sigma = 0.005,
         int                      $intervalSeconds = 1,
         ?int                     $scale = 5,
-        ?bool                    $getPrices = false
+        ?bool                    $getPrices = false,
+        ?int                     $maxStep = 0,
+        ?bool                    $microSeconds = true
     ): array
     {
         try {
             // 解析开始和结束时间
-            $start = Carbon::parse($startTime, config('app.timezone'));
+            $start = Carbon::parseFromLocale($startTime);
             
-            $end = Carbon::parse($endTime, config('app.timezone'));
+            $end = Carbon::parseFromLocale($endTime);
             // 计算总分钟数和总步数
             $totalTime = max(0, $end->diffInSeconds($start));
             $steps     = max(3, intdiv(max(1, $totalTime), max(1, $intervalSeconds)));
+            $steps     = max($maxStep, $steps);
             
             // 将整个时间段划分为三个阶段
             $seg1 = max(1, intdiv($steps, 3));
@@ -119,13 +122,13 @@ final class GbmPathService {
                 // $low -= (random_int(0, 10) / 100) * $sigma * $low;
                 // $high = min($hi, max($high, $lo));
                 // $low = max($lo, min($low, $hi));
-                
+                $timestamp = $microSeconds ? $time->copy()->timestamp * 1000 : $time->copy()->timestamp;
                 $candles[] = [
                     'open'      => number_format($open, $scale),
                     'high'      => number_format($high, $scale),
                     'low'       => number_format($low, $scale),
                     'close'     => number_format($i == ($n - 1) ? $endClose : $close, $scale),
-                    'timestamp' => $time->copy()->timestamp * 1000,
+                    'timestamp' => $timestamp,
                 ];
                 
                 $time = $time->addSeconds($intervalSeconds);
