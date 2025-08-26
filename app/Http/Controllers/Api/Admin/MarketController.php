@@ -750,6 +750,7 @@ class MarketController extends ApiController {
             $sigma,
             8
         );
+        
         return $this->ok();
     }
     

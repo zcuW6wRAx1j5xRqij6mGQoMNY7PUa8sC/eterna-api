@@ -237,7 +237,6 @@ class BotTask {
             getPrices: true,
             maxStep: $maxStep
         );
-        $klineData = [];
         // 按天生成每秒价格
         for ($i = 0; $i < count($prices) - 1; $i++) {
             $open  = $prices[$i];
