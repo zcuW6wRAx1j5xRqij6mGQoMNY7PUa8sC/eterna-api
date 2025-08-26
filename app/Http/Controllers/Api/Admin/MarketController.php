@@ -731,7 +731,7 @@ class MarketController extends ApiController {
     
     public function bbb()
     {
-        $data = (new InfluxDB('market_spot'))->queryKline('dddusdc', '30m', '-1y');
+        $data = (new InfluxDB('market_spot'))->queryKline('DDDUSDC', '30m', '-1y');
         dd($data);
     }
     
