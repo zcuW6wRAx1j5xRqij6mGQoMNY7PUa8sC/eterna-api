@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('flag')->nullable()->comment('旗帜');
             $table->string('name')->comment('名称');
             $table->string('phone_code')->comment('电话区号');
+            $table->integer('sort')->default(99)->comment('排序');
             $table->tinyInteger('status')->default(1)->comment('状态0关闭 1启用');
             $table->timestamps();
         });

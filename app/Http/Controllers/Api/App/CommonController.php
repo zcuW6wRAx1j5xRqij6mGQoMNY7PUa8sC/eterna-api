@@ -113,7 +113,7 @@ class CommonController extends ApiController {
      * @throws BindingResolutionException
      */
     public function countryList(Request $request) {
-        $data = PlatformCountry::where('status', CommonEnums::Yes)->get();
+        $data = PlatformCountry::where('status', CommonEnums::Yes)->orderBy('sort')->get();
         return $this->ok($data);
     }
 
