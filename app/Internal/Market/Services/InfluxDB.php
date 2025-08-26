@@ -80,12 +80,12 @@ class InfluxDB
 
     /**
      * 单条数据写入
-     * @param string $symbol 
-     * @param string $interval 
-     * @param array $kline 
-     * @return true 
-     * @throws InvalidArgumentException 
-     * @throws ApiException 
+     * @param string $symbol
+     * @param string $interval
+     * @param array $kline
+     * @return true
+     * @throws InvalidArgumentException
+     * @throws ApiException
      */
     public function writeData(string $symbol, string $interval,array $kline) {
         $w = $this->client->createWriteApi();
@@ -106,12 +106,12 @@ class InfluxDB
 
     /**
      * 写入数据- 批量
-     * @param string $symbol 
-     * @param string $interval 
-     * @param array $kline 
-     * @return true 
-     * @throws InvalidArgumentException 
-     * @throws ApiException 
+     * @param string $symbol
+     * @param string $interval
+     * @param array $kline
+     * @return true
+     * @throws InvalidArgumentException
+     * @throws ApiException
      */
     public function writeDataBatch(string $symbol, string $interval,array $kline) {
 
@@ -130,7 +130,7 @@ class InfluxDB
         $w = $this->client->createWriteApi(
             ["writeType" => WriteType::BATCHING, 'batchSize' => 1000]
         );
-        
+
         foreach ($kline as $item) {
             $point = Point::measurement($symbol)
                 ->addTag("symbol", $symbol)
@@ -276,5 +276,37 @@ sql;
             $resp[$curSymbol][] = json_decode($v, true);
         }
         return $resp;
+    }
+
+    public function writeMultiData($symbol, $klines, $interval = '1m')
+    {
+        $symbol = strtolower($symbol);
+
+        foreach ($klines as $kline) {
+            // 准备K线内容JSON
+            $content = json_encode([
+                'o'  => $kline['open'],
+                'c'  => $kline['close'],
+                'h'  => $kline['high'],
+                'l'  => $kline['low'],
+                'v'  => $kline['volume'],
+                'co' => $kline['count'] ?: 0,
+                'tl' => $kline['time'],
+            ]);
+
+            // 创建数据点
+            $point = Point::measurement($symbol)
+                ->addTag('symbol', $symbol)
+                ->addTag('interval', $interval)
+                ->addField('content', $content)
+                ->time(strtotime($kline['time']) * 1000, WritePrecision::MS); // 转换为毫秒时间戳
+
+            // 写入数据点
+            $w = $this->client->createWriteApi();
+            $w->write($point);
+            $w->close();
+        }
+
+        return true;
     }
 }
