@@ -262,7 +262,7 @@ class BotTask {
                 short: true
             );
             $minutes = $this->aggregates($kline, ['1m']);
-            InfluxDB::writeData($symbol, '1m', $minutes['1m']);
+            (new InfluxDB('market_spot'))->writeData($symbol, '1m', $minutes['1m']);
         }
     }
     
