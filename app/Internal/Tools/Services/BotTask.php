@@ -240,6 +240,7 @@ class BotTask {
         );
         $service = new InfluxDB('market_spot');
         $service->deleteData($symbol);
+        $minutes = [];
         // 按天生成每秒价格
         for ($i = 0; $i < count($prices) - 1; $i++) {
             $open       = $prices[$i];
@@ -256,7 +257,7 @@ class BotTask {
             } else if ($low > $open) {
                 $low = $open;
             }
-            $kline   = GbmPathService::generateCandles(
+            $kline = GbmPathService::generateCandles(
                 startOpen: $open,
                 endClose: $close,
                 startTime: $days[$i],
@@ -267,9 +268,15 @@ class BotTask {
                 scale: $scale,
                 short: true
             );
-            $minutes = $this->aggregates($kline, [$unit]);
-            $service->writeData($symbol, $unit, $minutes[$unit]);
+            $data  = $this->aggregates($kline, [$unit]);
+            $service->writeData($symbol, $unit, $data[$unit]);
+            $minutes = array_merge($minutes, $data[$unit]);
         }
+        $all = $this->aggregates($minutes, ['5m', '15m', '30m', '1d']);
+        $service->writeData($symbol, '5m', $all['5m']);
+        $service->writeData($symbol, '15m', $all['15m']);
+        $service->writeData($symbol, '30m', $all['30m']);
+        $service->writeData($symbol, '1d', $all['1d']);
         return [];
     }
     
@@ -365,9 +372,9 @@ class BotTask {
                     // open 保持首笔
                     $kline['h'] = max($kline['h'], (float)$row['h']);
                     $kline['l'] = min($kline['l'], (float)$row['l']);
-                    $kline['c'] = (float)$row['c'];          // close 为该桶内最后一笔
+                    $kline['c'] = (float)$row['c'];
                     $kline['v'] += $row['v'];
-                    unset($kline);                           // 释放引用
+                    unset($kline);
                 }
             }
         }
