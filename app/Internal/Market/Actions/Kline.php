@@ -100,30 +100,22 @@ class Kline {
     private function getQueryStart(string $interval){
         switch ($interval) {
             case IntervalEnums::Interval1Minute:
-                return "-2d";
-            break;
+                return "-7d";
             case IntervalEnums::Interval5Minutes:
-                return "-2d";
-            break;
+                return "-15d";
             case IntervalEnums::Interval15Minutes:
-                return "-2d";
-            break;
-            case IntervalEnums::Interval30Minutes:
-                return "-1y";
-            break;
-            case IntervalEnums::Interval1Hour:
                 return "-1mo";
-            break;
+            case IntervalEnums::Interval30Minutes:
+                return "-3mo";
+            case IntervalEnums::Interval1Hour:
+                return "-6mo";
             case IntervalEnums::Interval1Day:
                 return "-1y";
-            break;
             case IntervalEnums::Interval1Week:
                 return "-3y";
-            break;
             case IntervalEnums::Interval1Month:
             case IntervalEnums::SpecialInterval1Month:
                 return "-10y";
-            break;
         }
 
     }
