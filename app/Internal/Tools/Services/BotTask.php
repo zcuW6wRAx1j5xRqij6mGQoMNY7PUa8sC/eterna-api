@@ -17,8 +17,7 @@ use App\Models\BotTask as ModelsBotTask;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
-class BotTask
-{
+class BotTask {
     const TaskCommandQueueName = "bot.task";
 
     // TaskCommandTypeNewTask 任务指令类型 : 新任务
@@ -192,7 +191,7 @@ class BotTask
         } catch (Throwable $e) {
             // 捕获异常，回滚事务，并记录错误日志
             DB::rollBack();
-            Log::error('Create Bot Task Failed:'.$e->getMessage());
+            Log::error('Create Bot Task Failed:' . $e->getMessage());
             return $e->getMessage();
         }
     }
@@ -242,7 +241,7 @@ class BotTask
             maxStep: $maxStep
         );
         $service = new InfluxDB('market_spot');
-        $service->deleteData($symbol);
+//        $service->deleteData($symbol);
         $minutes = [];
         // 按天生成每秒价格
         for ($i = 0; $i < count($prices) - 1; $i++) {
@@ -277,11 +276,14 @@ class BotTask
             $minutes = array_merge($minutes, $data[$unit]);
         }
         $all = $this->aggregates($minutes, ['5m', '15m', '30m', '1d']);
-        Log::info("聚合数据：", $all);
         $service->writeData($symbol, '5m', $all['5m']);
+        Log::info("聚合数据5分钟：", $all['5m']);
         $service->writeData($symbol, '15m', $all['15m']);
+        Log::info("聚合数据15分钟：", $all['15m']);
         $service->writeData($symbol, '30m', $all['30m']);
+        Log::info("聚合数据30分钟：", $all['30m']);
         $service->writeData($symbol, '1d', $all['1d']);
+        Log::info("聚合数据天：", $all['1d']);
         return [];
     }
 
@@ -413,7 +415,7 @@ class BotTask
             // === 1. 自然周（周一为起始）===
             $week_start = clone $dt;
             $weekday    = (int)$week_start->format('N'); // 1=Mon, 7=Sun
-            $week_start->modify("-".($weekday - 1)." days");
+            $week_start->modify("-" . ($weekday - 1) . " days");
             $week_start->setTime(0, 0, 0);
             $week_key = $week_start->format('Y-\W%W'); // 如 2024-W36
 
