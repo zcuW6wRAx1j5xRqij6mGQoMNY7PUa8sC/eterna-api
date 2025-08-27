@@ -77,7 +77,7 @@ class CreateCoinHistoryData implements ShouldQueue {
             );
             $data    = $this->aggregates($kline, [$this->options['unit']]);
             $minutes = $data[$this->options['unit']];
-            if($i/3==0) {
+            if($i%3==0) {
                 $redis = Redis::connection();
             }
             // 使用 redis 管道批量写入数据库
