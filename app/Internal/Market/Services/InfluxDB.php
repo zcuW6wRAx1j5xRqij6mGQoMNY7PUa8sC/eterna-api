@@ -89,8 +89,6 @@ class InfluxDB
      */
     public function writeData(string $symbol, string $interval, array $kline): true
     {
-
-        Log::debug('writeData InfluxDB write', ['symbol' => $symbol, 'interval' => $interval, 'kline' => $kline]);
         // kline 示例
         // $kline = [
         //     [
@@ -132,7 +130,6 @@ class InfluxDB
 //                ->addField("v", $item['v'])
 //                ->addField("tl", $item['tl']) // 毫秒
                 ->time($item['tl'], WritePrecision::MS);
-            Log::debug('writeData InfluxDB write', ['symbol'=>$symbol, 'interval'=>$interval, 'content' => $content]);
             $points[] = $point;
         }
         try {
@@ -205,11 +202,9 @@ sql;
         );
 
         $data = $this->queryApi->queryStream($query);
-        Log::info("query kline", ['query'=>$query]);
         $resp = [];
         foreach ($data->each() as $record) {
             $v = $record->getValue();
-            Log::info("query kline each", ['v'=>$v]);
             if (!$v) {
                 continue;
             }
