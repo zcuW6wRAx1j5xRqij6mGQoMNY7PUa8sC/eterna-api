@@ -465,9 +465,15 @@ class BotTask
         // 转为有序数组
         $result_weekly = array_values($weekly);
         usort($result_weekly, fn($a, $b) => $a['tl_start'] <=> $b['tl_start']);
+        foreach ($result_weekly as $k=>$v) {
+            unset($result_weekly[$k]['tl_start']);
+        }
 
         $result_monthly = array_values($monthly);
         usort($result_monthly, fn($a, $b) => $a['tl_start'] <=> $b['tl_start']);
+        foreach ($result_monthly as $k=>$v) {
+            unset($result_monthly[$k]['tl_start']);
+        }
 
         return [
             'weekly'  => $result_weekly,

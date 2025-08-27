@@ -737,16 +737,13 @@ class MarketController extends ApiController {
 
     public function ccc()
     {
-        $klines = (new InfluxDB('market_spot'))->queryKline('btcusdt', '1d', '-1y');
+        $symbol = 'btcusdt';
+
+        $klines = (new InfluxDB('market_spot'))->queryKline($symbol, '1d', '-1y');
         var_dump($klines);
 
-//        $klines = [
-//            ["o" => 100, "l" => 98, "h" => 102, "c" => 101, "v" => 1000, "tl" => 1725120000000], // 2024-09-01
-//            ["o" => 101, "l" => 99, "h" => 103, "c" => 102, "v" => 1100, "tl" => 1725206400000], // 2024-09-02
-//        ];
-
-        $svr = new \App\Internal\Tools\Services\BotTask();
-        $result = $svr->generateWeeklyAndMonthlyKLines($klines);
+        $srv = new \App\Internal\Tools\Services\BotTask();
+        $result = $srv->generateWeeklyAndMonthlyKLines($klines);
 
         echo "周K线数量: ".count($result['weekly'])."\n";
         echo "月K线数量: ".count($result['monthly'])."\n";
@@ -756,6 +753,9 @@ class MarketController extends ApiController {
             echo "周K: 开={$w['o']}, 高={$w['h']}, 低={$w['l']}, 收={$w['c']}, 量={$w['v']}, 结束时间=".date('Y-m-d', $w['tl'] / 1000)."\n";
         }
 
+        $service = new InfluxDB('market_spot');
+        $service->writeData($symbol, '1w', $result['weekly']);
+        $service->writeData($symbol, '1M', $result['monthly']);
     }
 
     public function createNewBotTask(Request $request, ServicesBotTask $service): JsonResponse
