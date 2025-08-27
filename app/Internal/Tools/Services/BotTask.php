@@ -265,10 +265,8 @@ class BotTask {
                 scale: $scale,
                 short: true
             );
-            $minutes = $this->aggregates($kline, ['1m', '5m', '15m', '30m', '1h', '1w', '1M']);
-            foreach ($minutes as $unit => $data) {
-                (new InfluxDB('market_spot'))->writeData($symbol, $unit, $data);
-            }
+            $minutes = $this->aggregates($kline, [$unit]);
+            (new InfluxDB('market_spot'))->writeData($symbol, $unit, $minutes[$unit]);
         }
         return [];
     }
