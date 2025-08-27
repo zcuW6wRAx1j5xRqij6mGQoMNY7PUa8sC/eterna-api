@@ -247,7 +247,7 @@ class BotTask {
         if ($isDel) {
             $service->deleteData($symbol);
         }
-        $redis   = Redis::connection();
+        $redis = Redis::connection();
         // 按天生成每秒价格
         for ($i = 0; $i < count($prices) - 1; $i++) {
             $open       = $prices[$i];
@@ -502,9 +502,13 @@ class BotTask {
     
     public function createKline($symbol, $unit, $internal)
     {
-        $key    = $symbol . ':1m';
-        $redis  = Redis::connection();
-        $length = $redis->zcount($key, '-inf', '+inf');
+        $key   = $symbol . ':1m';
+        $redis = Redis::connection();
+        if (!$redis) {
+            Log::error('Redis connection error');
+            return false;
+        }
+        $length = $redis->select(4)->zcount($key, '-inf', '+inf');
         $influx = new InfluxDB('market_spot');
         for ($i = 0; $i < $length; $i += $unit) {
             $data = $redis->zrange($key, $i, $i + ($unit - 1));
