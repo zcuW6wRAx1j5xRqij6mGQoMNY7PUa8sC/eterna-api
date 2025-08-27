@@ -5,6 +5,7 @@ namespace App\Jobs;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Illuminate\Bus\Queueable;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redis;
 use Internal\Market\Services\InfluxDB;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -85,6 +86,7 @@ class CreateCoinHistoryData implements ShouldQueue {
                     $pipe->zadd($this->options['symbol'] . ":" . $this->options['unit'], $minute['tl'], json_encode($minute));
                 }
             });
+            Log::info(Carbon::createFromTimestamp($minutes[0]['tl'] / 1000, config('app.timezone'))->toDateTimeString() . ' 数量：' . count($minutes));
             $service->writeData($this->options['symbol'], $this->options['unit'], $minutes);
         }
     }
