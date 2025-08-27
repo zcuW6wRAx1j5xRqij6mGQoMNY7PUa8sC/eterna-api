@@ -27,7 +27,7 @@ final class GbmPathService {
      * @param int                      $intervalSeconds 每根K线的时间间隔（秒），默认为1秒钟
      * @param float                    $sigma           波动率参数，用于控制价格波动幅度，默认为0.02
      * @param ?int                     $scale           小数位数，默认为5
-     *
+     * @param ?bool                    $getPrices       是否获取价格数据，默认为false
      *
      * @return array 返回一个包含K线数据的数组，每根K线包含 open, high, low, close, volume, time 字段
      */
@@ -38,19 +38,24 @@ final class GbmPathService {
         string|DateTimeInterface $endTime,
         float                    $targetHigh,
         float                    $targetLow,
-        float                    $sigma = 0.005, // Increased default for more natural fluctuations
+        float                    $sigma = 0.005,
         int                      $intervalSeconds = 1,
         ?int                     $scale = 5,
+        ?bool                    $getPrices = false,
+        ?int                     $maxStep = 0,
+        ?bool                    $microSeconds = true,
+        ?bool                    $short = false,
     ): array
     {
         try {
             // 解析开始和结束时间
-            $start = Carbon::parse($startTime, config('app.timezone'));
+            $start = Carbon::parseFromLocale($startTime);
             
-            $end = Carbon::parse($endTime, config('app.timezone'));
+            $end = Carbon::parseFromLocale($endTime);
             // 计算总分钟数和总步数
-            $totalMinutes = max(0, $end->diffInSeconds($start));
-            $steps        = max(3, intdiv(max(1, $totalMinutes), max(1, $intervalSeconds)));
+            $totalTime = max(0, $end->diffInSeconds($start));
+            $steps     = max(3, intdiv(max(1, $totalTime), max(1, $intervalSeconds)));
+            $steps     = max($maxStep, $steps);
             
             // 将整个时间段划分为三个阶段
             $seg1 = max(1, intdiv($steps, 3));
@@ -68,23 +73,23 @@ final class GbmPathService {
             $upOrLow = rand(0, 1);
             
             if ($upOrLow) {
-                $path1 = self::gbmSegment($startOpen, $targetHigh, $seg1, $sigma, $lo, $hi);
-                $prices = array_merge($prices, $path1);
+                $path1                      = self::gbmSegment($startOpen, $targetHigh, $seg1, $sigma, $lo, $hi);
+                $prices                     = array_merge($prices, $path1);
                 $prices[count($prices) - 1] = $targetHigh; // 强制段末命中目标
                 
-                $current = $prices[count($prices) - 1];
-                $path2 = self::gbmSegment($current, $targetLow, $seg2, $sigma, $lo, $hi);
-                $prices = array_merge($prices, $path2);
+                $current                    = $prices[count($prices) - 1];
+                $path2                      = self::gbmSegment($current, $targetLow, $seg2, $sigma, $lo, $hi);
+                $prices                     = array_merge($prices, $path2);
                 $prices[count($prices) - 1] = $targetLow;
                 
             } else {
-                $path1 = self::gbmSegment($startOpen, $targetLow, $seg1, $sigma, $lo, $hi);
-                $prices = array_merge($prices, $path1);
+                $path1                      = self::gbmSegment($startOpen, $targetLow, $seg1, $sigma, $lo, $hi);
+                $prices                     = array_merge($prices, $path1);
                 $prices[count($prices) - 1] = $targetLow;
                 
-                $current = $prices[count($prices) - 1];
-                $path2 = self::gbmSegment($current, $targetHigh, $seg2, $sigma, $lo, $hi);
-                $prices = array_merge($prices, $path2);
+                $current                    = $prices[count($prices) - 1];
+                $path2                      = self::gbmSegment($current, $targetHigh, $seg2, $sigma, $lo, $hi);
+                $prices                     = array_merge($prices, $path2);
                 $prices[count($prices) - 1] = $targetHigh;
                 
             }
@@ -94,6 +99,15 @@ final class GbmPathService {
             
             // 确保整体极值命中（如果自然未触及）
             $prices = self::verifyData($prices, $targetHigh, $targetLow);
+            
+            // 是否直接获取价格数据
+            if ($getPrices) {
+                foreach ($prices as $i => $price) {
+                    $prices[$i] = number_format($price, $scale);
+                }
+                $prices[count($prices) - 1] = number_format($endClose, $scale);
+                return $prices;
+            }
             
             // 根据价格序列构造K线数据
             $candles = [];
@@ -109,15 +123,28 @@ final class GbmPathService {
                 // $low -= (random_int(0, 10) / 100) * $sigma * $low;
                 // $high = min($hi, max($high, $lo));
                 // $low = max($lo, min($low, $hi));
+                $timestamp = $microSeconds ? $time->copy()->timestamp * 1000 : $time->copy()->timestamp;
+                if ($short) {
+                    $item = [
+                        'o'  => number_format($open, $scale),
+                        'h'  => number_format($high, $scale),
+                        'l'  => number_format($low, $scale),
+                        'c'  => number_format($i == ($n - 1) ? $endClose : $close, $scale),
+                        'v'  => rand(0, 1000),
+                        'tl' => $timestamp,
+                    ];
+                } else {
+                    $item = [
+                        'open'      => number_format($open, $scale),
+                        'high'      => number_format($high, $scale),
+                        'low'       => number_format($low, $scale),
+                        'close'     => number_format($i == ($n - 1) ? $endClose : $close, $scale),
+                        'timestamp' => $timestamp,
+                    ];
+                }
+                $candles[] = $item;
                 
-                $candles[] = [
-                    'open'      => number_format($open, $scale),
-                    'high'      => number_format($high, $scale),
-                    'low'       => number_format($low, $scale),
-                    'close'     => number_format($i == ($n - 1) ? $endClose : $close, $scale),
-                    'timestamp' => $time->copy()->timestamp * 1000,
-                ];
-                $time      = $time->addSeconds($intervalSeconds);
+                $time = $time->addSeconds($intervalSeconds);
             }
             return $candles;
         } catch (RandomException $e) {
@@ -150,7 +177,7 @@ final class GbmPathService {
             }
             
             // 价格保持正
-            $price = max(0.0001, exp($logStart));
+            $price  = max(0.0001, exp($logStart));
             $path[] = $price;
         }
         return $path;

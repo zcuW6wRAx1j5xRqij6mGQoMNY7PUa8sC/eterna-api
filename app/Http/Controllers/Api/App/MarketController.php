@@ -154,11 +154,11 @@ class MarketController extends ApiController {
 
     /**
      * 查询所有交易对简单k线
-     * @param Request $request 
-     * @param Kline $kline 
-     * @return JsonResponse 
-     * @throws BadRequestException 
-     * @throws BindingResolutionException 
+     * @param Request $request
+     * @param Kline $kline
+     * @return JsonResponse
+     * @throws BadRequestException
+     * @throws BindingResolutionException
      */
     public function allSymbolSimpleLine(Request $request, Kline $kline) {
         $request->validate([
