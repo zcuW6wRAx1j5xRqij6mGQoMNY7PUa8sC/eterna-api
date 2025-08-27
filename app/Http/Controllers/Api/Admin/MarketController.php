@@ -759,7 +759,7 @@ class MarketController extends ApiController {
 
         $service = new InfluxDB('market_spot');
         $service->writeData($symbol, '1w', $result['weekly']);
-        $service->writeData($symbol, '1M', $result['monthly']);
+        $service->writeData($symbol, '1mo', $result['monthly']);
     }
 
     public function createNewBotTask(Request $request, ServicesBotTask $service): JsonResponse
