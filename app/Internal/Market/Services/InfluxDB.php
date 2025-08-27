@@ -102,16 +102,14 @@ class InfluxDB
         //     ],
         // ];
 
-        $w = $this->client->createWriteApi([
+        $writeApi = $this->client->createWriteApi([
             'writeOptions' => [
-                'writeType'     => WriteType::BATCHING,
-                'batchSize'     => 100,      // 每 100 条发送一次
-                'flushInterval' => 500       // 每 500 毫秒发送一次（最快）
+                'writeType' => WriteType::SYNCHRONOUS // 立即发送，不缓冲
             ]
         ]);
 
         $points = [];
-        $count = count($kline);
+        $count  = count($kline);
         foreach ($kline as $item) {
             $content = json_encode([
                 "o"  => $item['o'],
@@ -136,9 +134,22 @@ class InfluxDB
 
             $points[] = $point;
         }
-        $w->write($points);
-        usleep(550000); // 550ms
-        $w->close();
+        try {
+            $writeApi->write($points);
+        } catch (ApiException $e) {
+            Log::error('writeData InfluxDB write failed: '.$e->getMessage(), [
+                'symbol'   => $symbol,
+                'interval' => $interval,
+                'code'     => $e->getCode(),
+                'response' => $e->getResponseBody()
+            ]);
+            throw new LogicException(__('Failed to write data to InfluxDB'));
+        } catch (\Exception $e) {
+            Log::error('writeData InfluxDB unexpected error: '.$e->getMessage());
+            throw new LogicException(__('Internal error when writing data'));
+        } finally {
+            $writeApi->close();
+        }
         return true;
     }
 
