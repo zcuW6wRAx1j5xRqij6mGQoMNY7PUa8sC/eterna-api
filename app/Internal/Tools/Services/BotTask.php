@@ -241,7 +241,7 @@ class BotTask {
             maxStep: $maxStep
         );
         $service = new InfluxDB('market_spot');
-        $service->deleteData($symbol);
+//        $service->deleteData($symbol);
         $minutes = [];
         // 按天生成每秒价格
         for ($i = 0; $i < count($prices) - 1; $i++) {
