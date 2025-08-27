@@ -123,12 +123,6 @@ class InfluxDB
                 ->addTag("symbol", strtolower($symbol))
                 ->addTag("interval", $interval)
                 ->addField("content", $content)
-//                ->addField("o", $item['o'])
-//                ->addField("c", $item['c'])
-//                ->addField("h", $item['h'])
-//                ->addField("l", $item['l'])
-//                ->addField("v", $item['v'])
-//                ->addField("tl", $item['tl']) // 毫秒
                 ->time($item['tl'], WritePrecision::MS);
             $points[] = $point;
         }
@@ -157,12 +151,15 @@ class InfluxDB
         $point = Point::measurement("zfsusdt")
             ->addTag("symbol", "zfsusdt")
             ->addTag("interval", "1m")
-            ->addField("o", '0.1942')
-            ->addField("c", '0.1953')
-            ->addField("h", '0.1953')
-            ->addField("l", '0.1942')
-            ->addField("v", '1997')
-            ->addField("tl", '1742846520000')
+            ->addField("content", json_encode([
+                "o"  => '0.1950',
+                "c"  => '0.1953',
+                "h"  => '0.1953',
+                "l"  => '0.1942',
+                "v"  => '1997',
+                "co" => 1,
+                "tl" => '1742846520000',
+            ]))
             ->time(1742846520000, WritePrecision::MS);
         $w->write($point);
         $w->close();
@@ -250,7 +247,6 @@ sql;
             return true;
         });
         $binanceSymbols = implode('or ', $binanceSymbols);
-
 
         $query = <<<sql
 from(bucket: "%s")
