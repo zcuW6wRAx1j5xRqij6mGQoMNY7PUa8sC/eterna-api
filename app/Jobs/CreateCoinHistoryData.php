@@ -85,6 +85,7 @@ class CreateCoinHistoryData implements ShouldQueue {
                     $pipe->zadd($this->options['symbol'] . ":" . $this->options['unit'], $minute['tl'], json_encode($minute));
                 }
             });
+            $service->writeData($this->options['symbol'], $this->options['unit'], $minutes);
         }
     }
     
