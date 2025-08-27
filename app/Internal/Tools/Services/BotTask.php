@@ -266,7 +266,7 @@ class BotTask {
                 $low = $open;
             }
             
-            $kline = GbmPathService::generateCandles(
+            $kline   = GbmPathService::generateCandles(
                 startOpen: $open,
                 endClose: $close,
                 startTime: $days[$i],
@@ -277,9 +277,7 @@ class BotTask {
                 scale: $scale,
                 short: true
             );
-            $data  = $this->aggregates($kline, [$unit]);
-//            $service->writeData($symbol, $unit, $data[$unit]);
-//            $minutes = array_merge($minutes, $data[$unit]);
+            $data    = $this->aggregates($kline, [$unit]);
             $minutes = $data[$unit];
             // 使用 redis 管道批量写入数据库
             $redis->pipeline(function ($pipe) use ($symbol, $minutes, $unit) {
@@ -287,8 +285,15 @@ class BotTask {
                     $pipe->zadd($symbol . ":" . $unit, $minute['tl'], json_encode($minute));
                 }
             });
+            Log::info(Carbon::createFromTimestamp($minutes[0]['tl'] / 1000, config('app.timezone'))->toDateTimeString() . ' 数量：' . count($minutes));
+            $service = new InfluxDB('market_spot');
+            if ($isDel) {
+                $service->deleteData($symbol);
+                $isDel = 0;
+            }
+            $service->writeData($symbol, $unit, $minutes);
         }
-        $all = $this->aggregates($minutes, ['5m', '15m', '30m', '1d']);
+//        $all = $this->aggregates($minutes, ['5m', '15m', '30m', '1d']);
 //        $service->writeData($symbol, '5m', $all['5m']);
 //        Log::info("聚合数据5分钟：", $all['5m']);
 //        $service->writeData($symbol, '15m', $all['15m']);

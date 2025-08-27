@@ -48,6 +48,7 @@ class CreateCoinHistoryData implements ShouldQueue {
         $redis   = Redis::connection();
         // 按天生成每秒价格
         for ($i = 0; $i < count($prices) - 1; $i++) {
+            Log::info("生成价格: " . $prices[$i]);
             $open       = $prices[$i];
             $close      = $prices[$i + 1];
             $maxOffset  = rand(0, (int)((($this->options['close'] - $open) / 2) * 10000)) / 10000;
@@ -83,12 +84,12 @@ class CreateCoinHistoryData implements ShouldQueue {
                 }
             });
             Log::info(Carbon::createFromTimestamp($minutes[0]['tl'] / 1000, config('app.timezone'))->toDateTimeString() . ' 数量：' . count($minutes));
-//            $service = new InfluxDB('market_spot');
-//            if ($this->options['is_del']) {
-//                $service->deleteData($this->options['symbol']);
-//                $this->options['is_del'] = 0;
-//            }
-//            $service->writeData($this->options['symbol'], $this->options['unit'], $minutes);
+            $service = new InfluxDB('market_spot');
+            if ($this->options['is_del']) {
+                $service->deleteData($this->options['symbol']);
+                $this->options['is_del'] = 0;
+            }
+            $service->writeData($this->options['symbol'], $this->options['unit'], $minutes);
         }
     }
     
