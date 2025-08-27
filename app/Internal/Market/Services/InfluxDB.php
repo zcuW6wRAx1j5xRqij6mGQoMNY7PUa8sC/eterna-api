@@ -113,7 +113,7 @@ class InfluxDB
                 "h"  => $item['h'],
                 "l"  => $item['l'],
                 "v"  => $item['v'],
-                "co" => $item['count']?:0,
+                "co" => 0,
                 "tl" => $item['tl'],
             ]);
             $point = Point::measurement($symbol)
