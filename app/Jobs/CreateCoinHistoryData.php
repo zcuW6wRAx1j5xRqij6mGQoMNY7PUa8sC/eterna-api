@@ -44,10 +44,6 @@ class CreateCoinHistoryData implements ShouldQueue {
             getPrices: true,
             maxStep: $maxStep
         );
-        $service = new InfluxDB('market_spot');
-        if ($this->options['is_del']) {
-            $service->deleteData($this->options['symbol']);
-        }
         $minutes = [];
         $redis   = Redis::connection();
         // 按天生成每秒价格
@@ -87,6 +83,10 @@ class CreateCoinHistoryData implements ShouldQueue {
                 }
             });
             Log::info(Carbon::createFromTimestamp($minutes[0]['tl'] / 1000, config('app.timezone'))->toDateTimeString() . ' 数量：' . count($minutes));
+            $service = new InfluxDB('market_spot');
+            if ($this->options['is_del']) {
+                $service->deleteData($this->options['symbol']);
+            }
             $service->writeData($this->options['symbol'], $this->options['unit'], $minutes);
         }
     }
