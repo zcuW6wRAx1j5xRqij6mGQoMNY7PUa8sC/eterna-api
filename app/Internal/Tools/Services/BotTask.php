@@ -247,7 +247,6 @@ class BotTask {
         if ($isDel) {
             $service->deleteData($symbol);
         }
-        $minutes = [];
         $redis   = Redis::connection();
         // 按天生成每秒价格
         for ($i = 0; $i < count($prices) - 1; $i++) {

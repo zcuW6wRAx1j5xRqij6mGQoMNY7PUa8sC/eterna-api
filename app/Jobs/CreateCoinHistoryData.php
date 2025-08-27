@@ -45,7 +45,7 @@ class CreateCoinHistoryData implements ShouldQueue {
             maxStep: $maxStep
         );
         $minutes = [];
-        $redis   = Redis::connection();
+        $redis = Redis::connection();
         // 按天生成每秒价格
         for ($i = 0; $i < count($prices) - 1; $i++) {
             Log::info("生成价格: " . $prices[$i]);
@@ -77,6 +77,9 @@ class CreateCoinHistoryData implements ShouldQueue {
             );
             $data    = $this->aggregates($kline, [$this->options['unit']]);
             $minutes = $data[$this->options['unit']];
+            if($i/3==0) {
+                $redis = Redis::connection();
+            }
             // 使用 redis 管道批量写入数据库
             $redis->pipeline(function ($pipe) use ($minutes) {
                 foreach ($minutes as $minute) {
