@@ -776,6 +776,8 @@ class MarketController extends ApiController {
     
     public function createKline(Request $request, ServicesBotTask $service)
     {
+        $redis = Redis::connection();
+        dd($redis->type('vitaxon_database_dddusdc:1m'));
         $symbol   = $request->input('symbol');
         $unit     = $request->input('unit', 5);
         $internal = $request->input('internal', '5m');

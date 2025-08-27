@@ -82,21 +82,21 @@ class CreateCoinHistoryData implements ShouldQueue {
             }
             $key = $this->options['symbol'] . ":" . $this->options['unit'];
             // 使用 redis 管道批量写入数据库
-            foreach ($minutes as $minute) {
-                $redis->zadd($key, $minute['tl'], json_encode($minute));
-            }
-//            $redis->pipeline(function ($pipe) use ($minutes) {
-//                foreach ($minutes as $minute) {
-//                    $pipe->zadd($this->options['symbol'] . ":" . $this->options['unit'], $minute['tl'], json_encode($minute));
-//                }
-//            });
+//            foreach ($minutes as $minute) {
+//                $redis->zadd($key, $minute['tl'], json_encode($minute));
+//            }
+            $redis->pipeline(function ($pipe) use ($minutes) {
+                foreach ($minutes as $minute) {
+                    $pipe->zadd($this->options['symbol'] . ":" . $this->options['unit'], $minute['tl'], json_encode($minute));
+                }
+            });
             Log::info(Carbon::createFromTimestamp($minutes[0]['tl'] / 1000, config('app.timezone'))->toDateTimeString() . ' 数量：' . count($minutes));
-            $service = new InfluxDB('market_spot');
-            if ($this->options['is_del']) {
-                $service->deleteData($this->options['symbol']);
-                $this->options['is_del'] = 0;
-            }
-            $service->writeData($this->options['symbol'], $this->options['unit'], $minutes);
+//            $service = new InfluxDB('market_spot');
+//            if ($this->options['is_del']) {
+//                $service->deleteData($this->options['symbol']);
+//                $this->options['is_del'] = 0;
+//            }
+//            $service->writeData($this->options['symbol'], $this->options['unit'], $minutes);
         }
     }
     
