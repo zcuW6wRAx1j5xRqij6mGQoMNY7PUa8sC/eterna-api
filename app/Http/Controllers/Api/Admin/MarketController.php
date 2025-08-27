@@ -738,7 +738,7 @@ class MarketController extends ApiController {
     public function ccc()
     {
         $klines = (new InfluxDB('market_spot'))->queryKline('btcusdt', '1d', '-1y');
-        var_dump($klines);exit;
+        var_dump($klines);
 
 //        $klines = [
 //            ["o" => 100, "l" => 98, "h" => 102, "c" => 101, "v" => 1000, "tl" => 1725120000000], // 2024-09-01
