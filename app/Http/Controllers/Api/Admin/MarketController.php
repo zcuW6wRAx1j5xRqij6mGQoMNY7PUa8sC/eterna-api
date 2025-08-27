@@ -753,6 +753,10 @@ class MarketController extends ApiController {
             echo "周K: 开={$w['o']}, 高={$w['h']}, 低={$w['l']}, 收={$w['c']}, 量={$w['v']}, 结束时间=".date('Y-m-d', $w['tl'] / 1000)."\n";
         }
 
+        foreach ($result['monthly'] as $w) {
+            echo "月K: 开={$w['o']}, 高={$w['h']}, 低={$w['l']}, 收={$w['c']}, 量={$w['v']}, 结束时间=".date('Y-m-d', $w['tl'] / 1000)."\n";
+        }
+
         $service = new InfluxDB('market_spot');
         $service->writeData($symbol, '1w', $result['weekly']);
         $service->writeData($symbol, '1M', $result['monthly']);
