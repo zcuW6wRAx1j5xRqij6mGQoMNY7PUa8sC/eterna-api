@@ -225,7 +225,7 @@ class BotTask {
         }
         $maxStep = count($days) - 1;
         // 生成价格
-        $prices = GbmPathService::generateCandles(
+        $prices  = GbmPathService::generateCandles(
             startOpen: $startOpen,
             endClose: $endClose,
             startTime: $startTime,
@@ -238,6 +238,8 @@ class BotTask {
             getPrices: true,
             maxStep: $maxStep
         );
+        $service = new InfluxDB('market_spot');
+        $service->deleteData($symbol);
         // 按天生成每秒价格
         for ($i = 0; $i < count($prices) - 1; $i++) {
             $open       = $prices[$i];
@@ -266,7 +268,7 @@ class BotTask {
                 short: true
             );
             $minutes = $this->aggregates($kline, [$unit]);
-            (new InfluxDB('market_spot'))->writeData($symbol, $unit, $minutes[$unit]);
+            $service->writeData($symbol, $unit, $minutes[$unit]);
         }
         return [];
     }
