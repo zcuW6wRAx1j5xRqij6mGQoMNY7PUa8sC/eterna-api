@@ -80,12 +80,12 @@ class InfluxDB
 
     /**
      * 写入数据
-     * @param string $symbol 
-     * @param string $interval 
-     * @param array $kline 
-     * @return true 
-     * @throws InvalidArgumentException 
-     * @throws ApiException 
+     * @param string $symbol
+     * @param string $interval
+     * @param array $kline
+     * @return true
+     * @throws InvalidArgumentException
+     * @throws ApiException
      */
     public function writeData(string $symbol, string $interval,array $kline): true
     {
@@ -105,17 +105,27 @@ class InfluxDB
         $w = $this->client->createWriteApi(
             ["writeType" => WriteType::BATCHING, 'batchSize' => 1000]
         );
-        
+
         foreach ($kline as $item) {
+            $content = json_encode([
+                "o"  => $item['o'],
+                "c"  => $item['c'],
+                "h"  => $item['h'],
+                "l"  => $item['l'],
+                "v"  => $item['v'],
+                "co" => $item['count']?:0,
+                "tl" => $item['tl'],
+            ]);
             $point = Point::measurement($symbol)
                 ->addTag("symbol", $symbol)
                 ->addTag("interval", $interval)
-                ->addField("o", $item['o'])
-                ->addField("c", $item['c'])
-                ->addField("h", $item['h'])
-                ->addField("l", $item['l'])
-                ->addField("v", $item['v'])
-                ->addField("tl", $item['tl']) // 毫秒
+                ->addField("content", $content)
+//                ->addField("o", $item['o'])
+//                ->addField("c", $item['c'])
+//                ->addField("h", $item['h'])
+//                ->addField("l", $item['l'])
+//                ->addField("v", $item['v'])
+//                ->addField("tl", $item['tl']) // 毫秒
                 ->time($item['tl'], WritePrecision::MS);
             $w->write($point);
         }
