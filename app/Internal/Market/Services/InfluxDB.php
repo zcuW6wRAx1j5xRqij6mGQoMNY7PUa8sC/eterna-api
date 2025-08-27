@@ -116,7 +116,7 @@ class InfluxDB
                 "co" => 0,
                 "tl" => $item['tl'],
             ]);
-            $point = Point::measurement($symbol)
+            $point = Point::measurement('kline')
                 ->addTag("symbol", $symbol)
                 ->addTag("interval", $interval)
                 ->addField("content", $content)
