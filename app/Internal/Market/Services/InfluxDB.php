@@ -35,19 +35,19 @@ class InfluxDB
 
     public function __construct(string $bucket)
     {
-        $this->addr = config('influxdb.addr', '');
-        $this->token = config('influxdb.token', '');
+        $this->addr   = config('influxdb.addr', '');
+        $this->token  = config('influxdb.token', '');
         $this->bucket = $bucket;
-        $this->org = config('influxdb.org', '');
+        $this->org    = config('influxdb.org', '');
 
         if (!$this->addr || !$this->token || !$this->bucket || !$this->org) {
             throw new LogicException(__('Whoops! Something went wrong'));
         }
-        $this->client = new Client([
-            'url' => $this->addr,
-            'token' => $this->token,
-            'bucket' => $this->bucket,
-            'org' => $this->org,
+        $this->client   = new Client([
+            'url'       => $this->addr,
+            'token'     => $this->token,
+            'bucket'    => $this->bucket,
+            'org'       => $this->org,
             'precision' => WritePrecision::MS,
             //'debug'=>true,
         ]);
@@ -68,7 +68,7 @@ class InfluxDB
 
     public function deleteData(string $symbol)
     {
-        $srv = $this->client->createService(DeleteService::class);
+        $srv       = $this->client->createService(DeleteService::class);
         $predicate = new DeletePredicateRequest();
         $predicate->setStart(Carbon::now()->subYears(30)->toRfc3339String());
         $predicate->setStop(Carbon::now()->toRfc3339String());
@@ -87,7 +87,7 @@ class InfluxDB
      * @throws InvalidArgumentException
      * @throws ApiException
      */
-    public function writeData(string $symbol, string $interval,array $kline): true
+    public function writeData(string $symbol, string $interval, array $kline): true
     {
 
         // kline 示例
@@ -102,10 +102,16 @@ class InfluxDB
         //     ],
         // ];
 
-        $w = $this->client->createWriteApi(
-            ["writeType" => WriteType::BATCHING, 'batchSize' => 1000]
-        );
+        $w = $this->client->createWriteApi([
+            'writeOptions' => [
+                'writeType'     => WriteType::BATCHING,
+                'batchSize'     => 100,      // 每 100 条发送一次
+                'flushInterval' => 500       // 每 500 毫秒发送一次（最快）
+            ]
+        ]);
 
+        $points = [];
+        $count = count($kline);
         foreach ($kline as $item) {
             $content = json_encode([
                 "o"  => $item['o'],
@@ -113,11 +119,11 @@ class InfluxDB
                 "h"  => $item['h'],
                 "l"  => $item['l'],
                 "v"  => $item['v'],
-                "co" => 0,
+                "co" => $count,
                 "tl" => $item['tl'],
             ]);
-            $point = Point::measurement('kline')
-                ->addTag("symbol", $symbol)
+            $point   = Point::measurement('kline')
+                ->addTag("symbol", strtolower($symbol))
                 ->addTag("interval", $interval)
                 ->addField("content", $content)
 //                ->addField("o", $item['o'])
@@ -127,14 +133,18 @@ class InfluxDB
 //                ->addField("v", $item['v'])
 //                ->addField("tl", $item['tl']) // 毫秒
                 ->time($item['tl'], WritePrecision::MS);
-            $w->write($point);
+
+            $points[] = $point;
         }
+        $w->write($points);
+        usleep(550000); // 550ms
         $w->close();
         return true;
     }
 
-    public function updateData() {
-        $w = $this->client->createWriteApi();
+    public function updateData()
+    {
+        $w     = $this->client->createWriteApi();
         $point = Point::measurement("zfsusdt")
             ->addTag("symbol", "zfsusdt")
             ->addTag("interval", "1m")
@@ -165,7 +175,7 @@ class InfluxDB
     public function queryKline(string $binanceSymbol, string $interval, string $start = '-1d')
     {
         $binanceSymbol = strtolower($binanceSymbol);
-        $query = <<<sql
+        $query         = <<<sql
 from(bucket: "%s")
   |> range(start: %s)
   |> filter(fn: (r) => r["_measurement"] == "%s")
@@ -173,7 +183,7 @@ from(bucket: "%s")
   |> filter(fn: (r) => r["interval"] == "%s")
   |> sort(columns: ["_time"], desc: false)
 sql;
-        $query = sprintf(
+        $query         = sprintf(
             $query,
             $this->bucket,
             $start,
@@ -193,31 +203,31 @@ sql;
         }
         // 去除重复时间戳(刷数据问题)
         if ($binanceSymbol == 'zfsusdt') {
-        $resp = collect($resp)
-            ->groupBy('tl')
-            ->flatMap(function ($group) {
-                // if ($tl <= '1742842800000') {
-                //     return $group->filter(function ($item) {
-                //         return !empty($item['co']);
-                //     });
-                // }
-                // return $group->filter(function ($item) {
-                //     return empty($item['co']);
-                // });
+            $resp = collect($resp)
+                ->groupBy('tl')
+                ->flatMap(function ($group) {
+                    // if ($tl <= '1742842800000') {
+                    //     return $group->filter(function ($item) {
+                    //         return !empty($item['co']);
+                    //     });
+                    // }
+                    // return $group->filter(function ($item) {
+                    //     return empty($item['co']);
+                    // });
 
-                $hasNonEmptyData = $group->contains(function ($item) {
-                    return !empty($item['co']);
-                });
-
-                if ($hasNonEmptyData) {
-                    return $group->filter(function ($item) {
+                    $hasNonEmptyData = $group->contains(function ($item) {
                         return !empty($item['co']);
                     });
-                }
-                return $group;
-            })
-            ->values()
-            ->all();
+
+                    if ($hasNonEmptyData) {
+                        return $group->filter(function ($item) {
+                            return !empty($item['co']);
+                        });
+                    }
+                    return $group;
+                })
+                ->values()
+                ->all();
         }
         return $resp;
     }
@@ -227,7 +237,7 @@ sql;
         $binanceSymbols = [];
         collect($symbols)->each(function ($item) use (&$binanceSymbols) {
             $item = strtolower($item);
-            array_push($binanceSymbols, 'r["symbol"] == "' . $item . '" ');
+            array_push($binanceSymbols, 'r["symbol"] == "'.$item.'" ');
             return true;
         });
         $binanceSymbols = implode('or ', $binanceSymbols);
@@ -254,7 +264,7 @@ sql;
         $resp = [];
         foreach ($data->each() as $record) {
             $curSymbol = $record->values['symbol'] ?? '';
-            $v = $record->getValue();
+            $v         = $record->getValue();
             if (!$v || !$curSymbol) {
                 continue;
             }
