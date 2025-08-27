@@ -3,6 +3,7 @@
 namespace App\Internal\Tools\Services;
 
 use Carbon\CarbonImmutable;
+use Illuminate\Http\Request;
 use App\Exceptions\LogicException;
 use DateTime;
 use DateTimeZone;
@@ -12,6 +13,7 @@ use Carbon\Carbon;
 use App\Models\Symbol;
 use App\Enums\CommonEnums;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Redis;
 use Internal\Market\Services\InfluxDB;
 use App\Models\BotTask as ModelsBotTask;
 use Illuminate\Support\Facades\DB;
@@ -206,7 +208,8 @@ class BotTask {
         string  $endTime,
         ?float  $sigma = 0.0003,
         ?int    $scale = 5,
-        ?string $unit = '1m'
+        ?string $unit = '1m',
+        ?int    $isDel = 0
     ): array
     {
         set_time_limit(0);
@@ -241,8 +244,11 @@ class BotTask {
             maxStep: $maxStep
         );
         $service = new InfluxDB('market_spot');
-//        $service->deleteData($symbol);
+        if ($isDel) {
+            $service->deleteData($symbol);
+        }
         $minutes = [];
+        $redis   = Redis::connection();
         // 按天生成每秒价格
         for ($i = 0; $i < count($prices) - 1; $i++) {
             $open       = $prices[$i];
@@ -272,18 +278,25 @@ class BotTask {
                 short: true
             );
             $data  = $this->aggregates($kline, [$unit]);
-            $service->writeData($symbol, $unit, $data[$unit]);
-            $minutes = array_merge($minutes, $data[$unit]);
+//            $service->writeData($symbol, $unit, $data[$unit]);
+//            $minutes = array_merge($minutes, $data[$unit]);
+            $minutes = $data[$unit];
+            // 使用 redis 管道批量写入数据库
+            $redis->pipeline(function ($pipe) use ($symbol, $minutes, $unit) {
+                foreach ($minutes as $minute) {
+                    $pipe->zadd($symbol . ":" . $unit, $minute['tl'], json_encode($minute));
+                }
+            });
         }
         $all = $this->aggregates($minutes, ['5m', '15m', '30m', '1d']);
-        $service->writeData($symbol, '5m', $all['5m']);
-        Log::info("聚合数据5分钟：", $all['5m']);
-        $service->writeData($symbol, '15m', $all['15m']);
-        Log::info("聚合数据15分钟：", $all['15m']);
-        $service->writeData($symbol, '30m', $all['30m']);
-        Log::info("聚合数据30分钟：", $all['30m']);
-        $service->writeData($symbol, '1d', $all['1d']);
-        Log::info("聚合数据天：", $all['1d']);
+//        $service->writeData($symbol, '5m', $all['5m']);
+//        Log::info("聚合数据5分钟：", $all['5m']);
+//        $service->writeData($symbol, '15m', $all['15m']);
+//        Log::info("聚合数据15分钟：", $all['15m']);
+//        $service->writeData($symbol, '30m', $all['30m']);
+//        Log::info("聚合数据30分钟：", $all['30m']);
+//        $service->writeData($symbol, '1d', $all['1d']);
+//        Log::info("聚合数据天：", $all['1d']);
         return [];
     }
 
@@ -482,5 +495,23 @@ class BotTask {
             'monthly' => $result_monthly,
         ];
     }
-
+    
+    public function createKline($symbol, $unit, $internal)
+    {
+        $key    = $symbol . ':1m';
+        $redis  = Redis::connection();
+        $length = $redis->zcount($key, '-inf', '+inf');
+        $influx = new InfluxDB('market_spot');
+        for ($i = 0; $i < $length; $i += $unit) {
+            $data = $redis->zrange($key, $i, $i + ($unit - 1));
+            $data = array_map(function ($item) {
+                return json_decode($item, true);
+            }, $data);
+            $data = $this->aggregates($data, [$internal]);
+            $data = $data[$internal];
+            $influx->writeData($symbol, $internal, $data);
+            $data = [];
+        }
+    }
+    
 }
