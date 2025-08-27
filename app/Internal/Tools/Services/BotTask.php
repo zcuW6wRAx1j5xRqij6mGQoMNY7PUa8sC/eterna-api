@@ -277,6 +277,7 @@ class BotTask
             $minutes = array_merge($minutes, $data[$unit]);
         }
         $all = $this->aggregates($minutes, ['5m', '15m', '30m', '1d']);
+        Log::info("聚合数据：", $all);
         $service->writeData($symbol, '5m', $all['5m']);
         $service->writeData($symbol, '15m', $all['15m']);
         $service->writeData($symbol, '30m', $all['30m']);
