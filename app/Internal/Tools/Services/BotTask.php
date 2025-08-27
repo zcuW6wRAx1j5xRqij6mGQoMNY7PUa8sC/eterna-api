@@ -244,17 +244,16 @@ class BotTask {
             $close      = $prices[$i + 1];
             $maxOffset  = rand(0, (int)((($endClose - $open) / 2) * 10000)) / 10000;
             $maxOffsets = rand(0, (int)((($targetHigh - $open) / 2) * 10000)) / 10000;
-            $high       = $open < $endClose ? $open + $maxOffset : $open + $maxOffsets;
+            $high       = $open < $endClose ? $open + abs($maxOffset) : $open + abs($maxOffsets);
             $high       = max($high, $close);
             $minOffset  = rand(0, (int)((($endClose - $close) / 2) * 10000)) / 10000;
             $minOffset2 = rand(0, (int)((($close - $endClose) / 2) * 10000)) / 10000;
-            $low        = $close < $endClose ? $close - $minOffset : $close - $minOffset2;
+            $low        = $close < $endClose ? $close - abs($minOffset) : $close - abs($minOffset2);
             if ($low < $targetLow) {
                 $low = $targetLow;
             } else if ($low > $open) {
                 $low = $open;
             }
-            
             $kline   = GbmPathService::generateCandles(
                 startOpen: $open,
                 endClose: $close,
@@ -266,8 +265,10 @@ class BotTask {
                 scale: $scale,
                 short: true
             );
-            $minutes = $this->aggregates($kline, [$unit]);
-            (new InfluxDB('market_spot'))->writeData($symbol, $unit, $minutes[$unit]);
+            $minutes = $this->aggregates($kline, ['1m', '5m', '15m', '30m', '1h', '1w', '1M']);
+            foreach ($minutes as $unit => $data) {
+                (new InfluxDB('market_spot'))->writeData($symbol, $unit, $data);
+            }
         }
         return [];
     }
