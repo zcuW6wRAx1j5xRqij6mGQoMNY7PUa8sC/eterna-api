@@ -240,11 +240,15 @@ class BotTask {
         );
         // 按天生成每秒价格
         for ($i = 0; $i < count($prices) - 1; $i++) {
-            $open  = $prices[$i];
-            $close = $prices[$i + 1];
-            $high  = $open < $endClose ? $open + ($endClose - $open) / 2 : $open + ($targetHigh - $open) / 2;
-            $high  = max($high, $close);
-            $low   = $close < $endClose ? $close - ($endClose - $close) / 2 : $close - ($close - $endClose) / 2;
+            $open       = $prices[$i];
+            $close      = $prices[$i + 1];
+            $maxOffset  = rand(0, (($endClose - $open) / 2) * 10000) / 10000;
+            $maxOffsets = rand(0, (($targetHigh - $open) / 2) * 10000) / 10000;
+            $high       = $open < $endClose ? $open + $maxOffset : $open + $maxOffsets;
+            $high       = max($high, $close);
+            $minOffset  = rand(0, (($endClose - $close) / 2) * 10000) / 10000;
+            $minOffset2 = rand(0, (($close - $endClose) / 2) * 10000) / 10000;
+            $low        = $close < $endClose ? $close - $minOffset : $close - $minOffset2;
             if ($low < $targetLow) {
                 $low = $targetLow;
             } else if ($low > $open) {
