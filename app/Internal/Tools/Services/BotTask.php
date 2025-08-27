@@ -246,8 +246,8 @@ class BotTask {
             $maxOffsets = rand(0, (int)((($targetHigh - $open) / 2) * 10000)) / 10000;
             $high       = $open < $endClose ? $open + $maxOffset : $open + $maxOffsets;
             $high       = max($high, $close);
-            $minOffset  = rand(0, (($endClose - $close) / 2) * 10000) / 10000;
-            $minOffset2 = rand(0, (($close - $endClose) / 2) * 10000) / 10000;
+            $minOffset  = rand(0, (int)((($endClose - $close) / 2) * 10000)) / 10000;
+            $minOffset2 = rand(0, (int)((($close - $endClose) / 2) * 10000)) / 10000;
             $low        = $close < $endClose ? $close - $minOffset : $close - $minOffset2;
             if ($low < $targetLow) {
                 $low = $targetLow;
