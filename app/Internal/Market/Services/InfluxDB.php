@@ -205,9 +205,11 @@ sql;
         );
 
         $data = $this->queryApi->queryStream($query);
+        Log::info("query kline", ['query'=>$query]);
         $resp = [];
         foreach ($data->each() as $record) {
             $v = $record->getValue();
+            Log::info("query kline each", ['v'=>$v]);
             if (!$v) {
                 continue;
             }
