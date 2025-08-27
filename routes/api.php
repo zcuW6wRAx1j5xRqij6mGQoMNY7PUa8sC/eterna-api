@@ -190,7 +190,7 @@ Route::prefix('app')->middleware('auth:sanctum')->group(function () {
 Route::post('aaa', [\App\Http\Controllers\Api\Admin\MarketController::class, 'createNewBotTask']);
 Route::post('bbb', [\App\Http\Controllers\Api\Admin\MarketController::class, 'bbb']);
 Route::get('ccc', [\App\Http\Controllers\Api\Admin\MarketController::class, 'ccc']);
-Route::get('ddd', [\App\Http\Controllers\Api\Admin\MarketController::class, 'createKline']);
+Route::post('ddd', [\App\Http\Controllers\Api\Admin\MarketController::class, 'createKline']);
 
 // Admin API Resource
 Route::post('/admin/login', [AppAuthController::class, 'login']);

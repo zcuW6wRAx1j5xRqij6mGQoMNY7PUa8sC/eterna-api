@@ -7,6 +7,7 @@ use App\Enums\CommonEnums;
 use App\Enums\SymbolEnums;
 use App\Exceptions\LogicException;
 use Illuminate\Support\Facades\Log;
+use App\Jobs\CreateCoinHistoryData;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Redis;
 use Internal\Market\Services\InfluxDB;
@@ -743,19 +744,32 @@ class MarketController extends ApiController {
         $unit       = $request->input('unit', '1m');
         $isDel      = $request->input('is_del', 0);
         $symbol     = Symbol::query()->where('id', $coinID)->value('symbol');
-        $service->generateHistoryData(
-            $symbol,
-            $open,
-            $targetHigh,
-            $targetLow,
-            $close,
-            $startTime,
-            $endTime,
-            $sigma,
-            8,
-            $unit,
-            $isDel
-        );
+//        $service->generateHistoryData(
+//            $symbol,
+//            $open,
+//            $targetHigh,
+//            $targetLow,
+//            $close,
+//            $startTime,
+//            $endTime,
+//            $sigma,
+//            8,
+//            $unit,
+//            $isDel
+//        );
+        CreateCoinHistoryData::dispatch([
+            'symbol'     => $symbol,
+            'open'       => $open,
+            'high'       => $targetHigh,
+            'low'        => $targetLow,
+            'close'      => $close,
+            'start_time' => $startTime,
+            'end_time'   => $endTime,
+            'sigma'      => $sigma,
+            'unit'       => $unit,
+            'is_del'     => $isDel,
+            'scale'      => 5,
+        ]);
         
         return $this->ok();
     }
