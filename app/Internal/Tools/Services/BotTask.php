@@ -228,7 +228,7 @@ class BotTask
         }
         $maxStep = count($days) - 1;
         // 生成价格
-        $prices = GbmPathService::generateCandles(
+        $prices  = GbmPathService::generateCandles(
             startOpen: $startOpen,
             endClose: $endClose,
             startTime: $startTime,
@@ -241,20 +241,27 @@ class BotTask
             getPrices: true,
             maxStep: $maxStep
         );
+        $service = new InfluxDB('market_spot');
+        $service->deleteData($symbol);
+        $minutes = [];
         // 按天生成每秒价格
         for ($i = 0; $i < count($prices) - 1; $i++) {
-            $open  = $prices[$i];
-            $close = $prices[$i + 1];
-            $high  = $open < $endClose ? $open + ($endClose - $open) / 2 : $open + ($targetHigh - $open) / 2;
-            $high  = max($high, $close);
-            $low   = $close < $endClose ? $close - ($endClose - $close) / 2 : $close - ($close - $endClose) / 2;
+            $open       = $prices[$i];
+            $close      = $prices[$i + 1];
+            $maxOffset  = rand(0, (int)((($endClose - $open) / 2) * 10000)) / 10000;
+            $maxOffsets = rand(0, (int)((($targetHigh - $open) / 2) * 10000)) / 10000;
+            $high       = $open < $endClose ? $open + abs($maxOffset) : $open + abs($maxOffsets);
+            $high       = max($high, $close);
+            $minOffset  = rand(0, (int)((($endClose - $close) / 2) * 10000)) / 10000;
+            $minOffset2 = rand(0, (int)((($close - $endClose) / 2) * 10000)) / 10000;
+            $low        = $close < $endClose ? $close - abs($minOffset) : $close - abs($minOffset2);
             if ($low < $targetLow) {
                 $low = $targetLow;
             } else if ($low > $open) {
                 $low = $open;
             }
 
-            $kline   = GbmPathService::generateCandles(
+            $kline = GbmPathService::generateCandles(
                 startOpen: $open,
                 endClose: $close,
                 startTime: $days[$i],
@@ -265,9 +272,15 @@ class BotTask
                 scale: $scale,
                 short: true
             );
-            $minutes = $this->aggregates($kline, [$unit]);
-            (new InfluxDB('market_spot'))->writeData($symbol, $unit, $minutes[$unit]);
+            $data  = $this->aggregates($kline, [$unit]);
+            $service->writeData($symbol, $unit, $data[$unit]);
+            $minutes = array_merge($minutes, $data[$unit]);
         }
+        $all = $this->aggregates($minutes, ['5m', '15m', '30m', '1d']);
+        $service->writeData($symbol, '5m', $all['5m']);
+        $service->writeData($symbol, '15m', $all['15m']);
+        $service->writeData($symbol, '30m', $all['30m']);
+        $service->writeData($symbol, '1d', $all['1d']);
         return [];
     }
 
@@ -363,9 +376,9 @@ class BotTask
                     // open 保持首笔
                     $kline['h'] = max($kline['h'], (float)$row['h']);
                     $kline['l'] = min($kline['l'], (float)$row['l']);
-                    $kline['c'] = (float)$row['c'];          // close 为该桶内最后一笔
+                    $kline['c'] = (float)$row['c'];
                     $kline['v'] += $row['v'];
-                    unset($kline);                           // 释放引用
+                    unset($kline);
                 }
             }
         }
