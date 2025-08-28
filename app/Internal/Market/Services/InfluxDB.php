@@ -208,10 +208,16 @@ sql;
             $resp[] = json_decode($v, true);
         }
         // 去除重复时间戳(刷数据问题)
-        if ($binanceSymbol == 'zfsusdt') {
+        if ($binanceSymbol == 'ulxusdc') {
             $resp = collect($resp)
                 ->groupBy('tl')
                 ->flatMap(function ($group) {
+                    // 如何获得 tl 数据? 
+                    $tl = $group->first()['tl'] ?? null;
+                    if ($tl <= '1756385100000') {
+                        return true;
+                    }
+
                     // if ($tl <= '1742842800000') {
                     //     return $group->filter(function ($item) {
                     //         return !empty($item['co']);
@@ -222,12 +228,12 @@ sql;
                     // });
 
                     $hasNonEmptyData = $group->contains(function ($item) {
-                        return !empty($item['co']);
+                        return !isset($item['co']);
                     });
 
                     if ($hasNonEmptyData) {
                         return $group->filter(function ($item) {
-                            return !empty($item['co']);
+                            return !isset($item['co']);
                         });
                     }
                     return $group;
