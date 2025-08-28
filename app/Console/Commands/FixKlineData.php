@@ -29,7 +29,7 @@ class FixKlineData extends Command
     public function handle()
     {
     $START   = '2024-01-01 08:00:00';
-    $END     = '2025-08-28 19:27:00';
+    $END     = '2025-08-28 19:29:00';
     $OPEN0   = 0.0100;
     $CLOSE1  = 0.3200;
     $LOW     = 0.0020;
