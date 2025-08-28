@@ -43,7 +43,6 @@ class FixKlineData extends Command
     ];
 
     (new InfluxDB('market_spot'))->deleteData('ulxusdc'); 
-    return;
 
     $eng =(new GenerateKline($START, $END, $HIGH, $LOW, $OPEN0, $CLOSE1, $SEED, $opts));
 
