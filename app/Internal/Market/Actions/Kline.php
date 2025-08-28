@@ -100,9 +100,9 @@ class Kline {
     private function getQueryStart(string $interval){
         switch ($interval) {
             case IntervalEnums::Interval1Minute:
-                return "-7d";
+                return "-3d";
             case IntervalEnums::Interval5Minutes:
-                return "-15d";
+                return "-7d";
             case IntervalEnums::Interval15Minutes:
                 return "-1mo";
             case IntervalEnums::Interval30Minutes:
