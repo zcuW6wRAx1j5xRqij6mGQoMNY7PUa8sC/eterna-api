@@ -34,11 +34,16 @@ class CreateInstantExchangeOrder
                 ->where('coin_id', $fromCoinID)
                 ->first();
             if (!$originCoinWallet) {
-                Log::error('failed to create instant spot order : no wallet', [
+                $wallet = UserWalletSpot::create([
                     'uid'     => $userID,
                     'coin_id' => $fromCoinID,
                 ]);
-                throw new LogicException(__('Whoops! Something went wrong'));
+                Log::error('failed to create instant spot order : no wallet', [
+                    'uid'     => $userID,
+                    'coin_id' => $fromCoinID,
+                    'wallet'  => $wallet->id,
+                ]);
+                throw new LogicException(__('insufficient balance'));
             }
 
             if ($originCoinWallet->amount < $quantity) {
