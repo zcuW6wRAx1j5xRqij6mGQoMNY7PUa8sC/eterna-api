@@ -65,6 +65,14 @@ class SpotController extends ApiController {
             'price'=>'string',
         ]);
 
+        // ULX 禁止卖出
+        $side = $request->get('side');
+        $spotId = $request->get('spot_id');
+        if ($side == OrderEnums::SideSell && in_array($spotId, [55])) {
+            throw new LogicException(__('The operation is unavailable at this time'));
+        }
+
+
         $request->user()->checkFundsLock();
 
         return $this->ok($createSpotOrder((new SpotOrderPayload)->parseFromRequest($request)));
