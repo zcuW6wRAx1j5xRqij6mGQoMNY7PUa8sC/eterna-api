@@ -209,40 +209,51 @@ sql;
         }
         // 去除重复时间戳(刷数据问题)
         if ($binanceSymbol == 'ulxusdc') {
-            $resp = collect($resp)
-                ->groupBy('tl')
-                ->flatMap(function ($group) {
-                    // 如何获得 tl 数据? 
-                    $tl = $group->first()['tl'] ?? null;
-                    if ($tl <= '1756385100000') {
-                        return $group->filter(function ($item) {
-                            return isset($item['co']);
-                        });
-                        // return false;
-                    }
+            $resp = collect($resp)->filter(function($item){
+                if ($item['tl'] <= 1756385100000) {
+                    return true;
+                }
+                if (isset($item['co'])) {
+                    return true;
+                }
+                return false;
+            });
 
-                    // if ($tl <= '1742842800000') {
-                    //     return $group->filter(function ($item) {
-                    //         return !empty($item['co']);
-                    //     });
-                    // }
-                    // return $group->filter(function ($item) {
-                    //     return empty($item['co']);
-                    // });
 
-                    $hasNonEmptyData = $group->contains(function ($item) {
-                        return isset($item['co']);
-                    });
+            // $resp = collect($resp)
+            //     ->groupBy('tl')
+            //     ->flatMap(function ($group) {
+            //         // 如何获得 tl 数据? 
+            //         $tl = $group->first()['tl'] ?? null;
+            //         if ($tl <= '1756385100000') {
+            //             return $group->filter(function ($item) {
+            //                 return isset($item['co']);
+            //             });
+            //             // return false;
+            //         }
 
-                    if ($hasNonEmptyData) {
-                        return $group->filter(function ($item) {
-                            return isset($item['co']);
-                        });
-                    }
-                    return $group;
-                })
-                ->values()
-                ->all();
+            //         // if ($tl <= '1742842800000') {
+            //         //     return $group->filter(function ($item) {
+            //         //         return !empty($item['co']);
+            //         //     });
+            //         // }
+            //         // return $group->filter(function ($item) {
+            //         //     return empty($item['co']);
+            //         // });
+
+            //         $hasNonEmptyData = $group->contains(function ($item) {
+            //             return isset($item['co']);
+            //         });
+
+            //         if ($hasNonEmptyData) {
+            //             return $group->filter(function ($item) {
+            //                 return isset($item['co']);
+            //             });
+            //         }
+            //         return $group;
+            //     })
+            //     ->values()
+            //     ->all();
         }
         return $resp;
     }
