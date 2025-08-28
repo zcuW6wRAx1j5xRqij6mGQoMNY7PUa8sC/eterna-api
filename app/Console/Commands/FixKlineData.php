@@ -42,9 +42,9 @@ class FixKlineData extends Command
     // 或仅用回调：$eng->enable1mOutput(true, fn($bar)=>/*写库*/);
 
     // 常用周期导出到 CSV：
-    $srv = new InfluxDB('market_spot');
-    $eng->addCallbackSink('5m',function($bar) use ($srv){
+    $eng->addCallbackSink('5m',function($bar){
         $bar['tl'] = $bar['t'].'000';
+        $srv = new InfluxDB('market_spot');
         $srv->writeData('ulxusdc','5m',[$bar]);
     });
 
