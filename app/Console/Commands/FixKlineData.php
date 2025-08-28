@@ -41,11 +41,13 @@ class FixKlineData extends Command
         'wiggleFracOfRange' => 0.25,
         'useExtremeWicks'   => false,
         'hardWickPctOfPricePerInterval' => [
+            '30m' => 0.006,
             '1d'     => 0.0035,   // 0.18%
             '1w'     => 0.0036,
             '1mo' => 0.0038,   // 0.22%
         ],
         'hardWickPipsPerInterval' => [
+            '30m' => 20,
             '1d'     => 18,       // 0.0012
             '1w'     => 18,
             '1mo' => 18,       // 0.0016
