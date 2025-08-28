@@ -35,13 +35,45 @@ class FixKlineData extends Command
     $HIGH    = 0.5000;
     $SEED    = 9527;
 
-    (new InfluxDB('market_spot'))->deleteData('ulxusdc'); 
+        $opts = [
+        'maxWickPctOfPrice' => 0.006, // 0.6%
+        'maxWickPips'       => 45,    // 0.0045
+        'wiggleFracOfRange' => 0.30,
+        'useExtremeWicks'   => false,
+    ];
 
-    $eng =(new GenerateKline($START, $END, $HIGH, $LOW, $OPEN0, $CLOSE1, $SEED));
+    (new InfluxDB('market_spot'))->deleteData('ulxusdc'); 
+    return;
+
+    $eng =(new GenerateKline($START, $END, $HIGH, $LOW, $OPEN0, $CLOSE1, $SEED, $opts));
 
     // 默认不导出 1m（体量巨大）。如需导出，取消下面两行注释，并启用 1m 输出。
     // $eng->addCsvSink('1m', "$OUTDIR/kline_1m.csv")->enable1mOutput(true);
     // 或仅用回调：$eng->enable1mOutput(true, fn($bar)=>/*写库*/);
+
+    $OUTDIR = './kline_influx_php';
+    if (!is_dir($OUTDIR)) mkdir($OUTDIR, 0777, true);
+
+    $measurement = 'kline';
+    $symbol      = 'ulxusdc';
+
+    // $eng->addCallbackSink('1m',)
+    $eng->addInfluxCsvSink('1m',     "$OUTDIR/kline_1m.csv",     $measurement, ['symbol'=>$symbol,'interval'=>'1m']);
+    $eng->addInfluxCsvSink('5m',     "$OUTDIR/kline_5m.csv",     $measurement, ['symbol'=>$symbol,'interval'=>'5m']);
+    $eng->addInfluxCsvSink('15m',    "$OUTDIR/kline_15m.csv",    $measurement, ['symbol'=>$symbol,'interval'=>'15m']);
+    $eng->addInfluxCsvSink('30m',    "$OUTDIR/kline_30m.csv",    $measurement, ['symbol'=>$symbol,'interval'=>'30m']);
+    $eng->addInfluxCsvSink('1h',     "$OUTDIR/kline_1h.csv",     $measurement, ['symbol'=>$symbol,'interval'=>'1h']);
+    $eng->addInfluxCsvSink('1d',     "$OUTDIR/kline_1d.csv",     $measurement, ['symbol'=>$symbol,'interval'=>'1d']);
+    $eng->addInfluxCsvSink('1w',     "$OUTDIR/kline_1w.csv",     $measurement, ['symbol'=>$symbol,'interval'=>'1w']);
+    $eng->addInfluxCsvSink('1month', "$OUTDIR/kline_1month.csv", $measurement, ['symbol'=>$symbol,'interval'=>'1month']);
+
+    $t0 = microtime(true);
+    $eng->run();
+    $eng->close();
+    $dt = microtime(true) - $t0;
+    $this->info("Kline data fixed successfully in {$dt} seconds.");
+
+    return $this->info('ok');
 
     // 常用周期导出到 CSV：
     $eng->addCallbackSink('1m', function($bar){
