@@ -75,6 +75,10 @@ class CreateInstantExchangeOrder
                 $bs = strtolower($originCoinWallet->coin->name.'usdt');
                 $originCoinMarketPrice = (new FetchSymbolQuote)($bs);
                 if (!$originCoinMarketPrice) {
+                    $bs = strtolower($originCoinWallet->coin->name.'usdc');
+                    $originCoinMarketPrice = (new FetchSymbolQuote)($bs);
+                }
+                if (!$originCoinMarketPrice) {
                     Log::error('failed to create instant spot order : no origin coin market price', [
                         'symbolId' => $originCoinWallet->coin_id,
                         'coinName' => $originCoinWallet->coin->name,
@@ -87,6 +91,10 @@ class CreateInstantExchangeOrder
             if($toCoinID != CoinEnums::DefaultUSDTCoinID){
                 $bs = $targetCoinWallet->coin->name.'usdt';
                 $targetCoinMarketPrice = (new FetchSymbolQuote)($bs);
+                if (!$targetCoinMarketPrice) {
+                    $bs = $targetCoinWallet->coin->name.'usdc';
+                    $targetCoinMarketPrice = (new FetchSymbolQuote)($bs);
+                }
                 if (!$targetCoinMarketPrice) {
                     Log::error('failed to create spot order : no target coin market price', [
                         'symbolId' => $targetCoinWallet->coin_id,
