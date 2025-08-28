@@ -215,7 +215,10 @@ sql;
                     // 如何获得 tl 数据? 
                     $tl = $group->first()['tl'] ?? null;
                     if ($tl <= '1756385100000') {
-                        return false;
+                        return $group->filter(function ($item) {
+                            return !isset($item['co']);
+                        });
+                        // return false;
                     }
 
                     // if ($tl <= '1742842800000') {
