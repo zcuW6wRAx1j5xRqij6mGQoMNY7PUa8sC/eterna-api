@@ -151,11 +151,11 @@ class GenerateKline
         $dt = '#datatype measurement';
         $tagKeys = array_keys($tags);
         foreach ($tagKeys as $_) $dt .= ',tag';
-        $dt .= ',string,string,string,string,long,dateTime:RFC3339';
+        $dt .= ',string,dateTime:RFC3339';
         fwrite($fp, $dt . "\n");
 
         // 头行
-        $headers = array_merge(['name'], $tagKeys, ['o','h','l','c','v','time']);
+        $headers = array_merge(['name'], $tagKeys, ['content']);
         fputcsv($fp, $headers);
 
         if (!isset($this->sinks[$interval])) $this->sinks[$interval] = [];
@@ -333,11 +333,23 @@ class GenerateKline
         foreach ($sinks as $sink) {
             $type = $sink['type'] ?? '';
             if ($type === 'influx_csv') {
+                $content = [
+                    'o'=>$bar['o'],
+                    'h'=>$bar['h'],
+                    'l'=>$bar['l'],
+                    'c'=>$bar['c'],
+                    'v'=>$bar['v'],
+                    'tl'=>$bar['tl'],
+                ];
                 $row = [];
                 $row[] = $sink['measurement'];                        // name
                 foreach ($sink['tagValues'] as $v) $row[] = (string)$v; // tag 列
-                $row[] = $bar['o']; $row[] = $bar['h']; $row[] = $bar['l']; $row[] = $bar['c'];
-                $row[] = (string)$bar['v'];
+                $row[] = json_encode($content);
+                // $row[] = $bar['o']; 
+                // $row[] = $bar['h']; 
+                // $row[] = $bar['l']; 
+                // $row[] = $bar['c'];
+                // $row[] = (string)$bar['v'];
                 $row[] = gmdate('Y-m-d\TH:i:s\Z', $bar['tl']);         // RFC3339 Z
                 fputcsv($sink['fp'], $row);
             } elseif ($type === 'cb') {
