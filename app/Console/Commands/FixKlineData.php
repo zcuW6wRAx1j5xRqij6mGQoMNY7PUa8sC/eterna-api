@@ -43,12 +43,12 @@ class FixKlineData extends Command
         'hardWickPctOfPricePerInterval' => [
             '1d'     => 0.0018,   // 0.18%
             '1w'     => 0.0022,
-            '1month' => 0.0022,   // 0.22%
+            '1mo' => 0.0022,   // 0.22%
         ],
         'hardWickPipsPerInterval' => [
             '1d'     => 12,       // 0.0012
             '1w'     => 16,
-            '1month' => 16,       // 0.0016
+            '1mo' => 16,       // 0.0016
         ],
     ];
 
