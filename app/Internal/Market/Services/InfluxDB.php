@@ -216,7 +216,7 @@ sql;
                     $tl = $group->first()['tl'] ?? null;
                     if ($tl <= '1756385100000') {
                         return $group->filter(function ($item) {
-                            return !isset($item['co']);
+                            return isset($item['co']);
                         });
                         // return false;
                     }
@@ -231,12 +231,12 @@ sql;
                     // });
 
                     $hasNonEmptyData = $group->contains(function ($item) {
-                        return !isset($item['co']);
+                        return isset($item['co']);
                     });
 
                     if ($hasNonEmptyData) {
                         return $group->filter(function ($item) {
-                            return !isset($item['co']);
+                            return isset($item['co']);
                         });
                     }
                     return $group;
