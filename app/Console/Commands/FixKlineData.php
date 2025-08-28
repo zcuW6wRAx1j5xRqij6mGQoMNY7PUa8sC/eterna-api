@@ -30,9 +30,9 @@ class FixKlineData extends Command
     $START   = '2024-01-01 08:00:00';
     $END     = '2025-08-28 12:00:00';
     $OPEN0   = 0.1000;
-    $CLOSE1  = 0.5000;
+    $CLOSE1  = 0.3100;
     $LOW     = 0.02000;
-    $HIGH    = 0.5000;
+    $HIGH    = 0.3400;
     $SEED    = 9527;
 
         $opts = [
