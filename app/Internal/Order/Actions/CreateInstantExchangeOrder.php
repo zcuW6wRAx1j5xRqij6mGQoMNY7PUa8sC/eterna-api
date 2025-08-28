@@ -26,8 +26,7 @@ class CreateInstantExchangeOrder
             throw new LogicException(__('Whoops! Something went wrong'));
         }
 
-        $createWallet = false;
-        $result = DB::transaction(function () use ($fromCoinID, $toCoinID, $quantity, $userID, &$createWallet) {
+        return DB::transaction(function () use ($fromCoinID, $toCoinID, $quantity, $userID) {
             // 源货币钱包
             $originCoinWallet = UserWalletSpot::query()->with(['coin'])
                 ->where('uid', $userID)
@@ -35,7 +34,6 @@ class CreateInstantExchangeOrder
                 ->where('coin_id', $fromCoinID)
                 ->first();
             if (!$originCoinWallet) {
-                $createWallet = true;
                 Log::error('failed to create instant spot order : no wallet', [
                     'uid'     => $userID,
                     'coin_id' => $fromCoinID,
@@ -152,11 +150,6 @@ class CreateInstantExchangeOrder
             $flow->relation_id = $flow2->id;
             $flow->save();
         });
-
-        Log::info('create instant exchange order', ['createWallet'=>$createWallet, 'uid' => $userID, 'coin_id' => $fromCoinID]);
-        $createWallet && UserWalletSpot::create(['uid' => $userID, 'coin_id' => $fromCoinID]);
-
-        return $result;
     }
 
 }
