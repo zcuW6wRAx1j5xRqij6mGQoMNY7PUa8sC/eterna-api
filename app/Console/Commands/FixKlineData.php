@@ -36,19 +36,19 @@ class FixKlineData extends Command
     $SEED    = 9527;
 
         $opts = [
-        'maxWickPctOfPrice' => 0.0025, 
-        'maxWickPips'       => 18, 
-        'wiggleFracOfRange' => 0.20,
+        'maxWickPctOfPrice' => 0.003, 
+        'maxWickPips'       => 22, 
+        'wiggleFracOfRange' => 0.25,
         'useExtremeWicks'   => false,
         'hardWickPctOfPricePerInterval' => [
-            '1d'     => 0.0030,   // 0.18%
-            '1w'     => 0.0032,
-            '1mo' => 0.0032,   // 0.22%
+            '1d'     => 0.0035,   // 0.18%
+            '1w'     => 0.0036,
+            '1mo' => 0.0038,   // 0.22%
         ],
         'hardWickPipsPerInterval' => [
-            '1d'     => 12,       // 0.0012
-            '1w'     => 16,
-            '1mo' => 16,       // 0.0016
+            '1d'     => 18,       // 0.0012
+            '1w'     => 18,
+            '1mo' => 18,       // 0.0016
         ],
     ];
 
