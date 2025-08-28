@@ -10,7 +10,7 @@ class FetchSymbolQuote {
 
     public function __invoke(string $binanceSymbol)
     {
-        return RedisMarket()->get(sprintf(MarketEnums::SpotSymbolQuoteCacheKey, $binanceSymbol));
+        return RedisMarket()->get(sprintf(MarketEnums::SpotSymbolQuoteCacheKey, strtolower($binanceSymbol)));
     }
 
     // 获取所有报价
