@@ -217,7 +217,7 @@ sql;
                     return true;
                 }
                 return false;
-            });
+            })->values()->all();
 
 
             // $resp = collect($resp)
