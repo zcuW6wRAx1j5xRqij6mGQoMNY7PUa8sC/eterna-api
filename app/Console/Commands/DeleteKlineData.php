@@ -27,10 +27,10 @@ class DeleteKlineData extends Command
     public function handle()
     {
         $srv = new InfluxDB('market_spot');
-        $srv->deleteData('syvusdc');
-        $srv->deleteData('nsyusdc');
-        $srv->deleteData('iswusdc');
         $srv->deleteData('gpuusdc');
-        $srv->deleteData('dsvusdc');
+        // $srv->deleteData('syvusdc');
+        // $srv->deleteData('nsyusdc');
+        // $srv->deleteData('iswusdc');
+        // $srv->deleteData('dsvusdc');
     }
 }
