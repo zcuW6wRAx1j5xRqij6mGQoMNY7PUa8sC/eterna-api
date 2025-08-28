@@ -70,6 +70,47 @@ class FixKlineData extends Command
     $measurement = 'kline';
     $symbol      = 'ulxusdc';
 
+    $eng->addCallbackSink('1m', function($bar) use ($symbol) {
+        $bar['tl'] = $bar['tl'].'000';
+        $srv = new InfluxDB('market_spot');
+        $srv->writeData($symbol,'1m',[$bar]);
+    })->addCallbackSink('5m', function($bar) use ($symbol) {
+        $bar['tl'] = $bar['tl'].'000';
+        $srv = new InfluxDB('market_spot');
+        $srv->writeData($symbol,'5m',[$bar]);
+    })->addCallbackSink('15m', function($bar) use ($symbol) {
+        $bar['tl'] = $bar['tl'].'000';
+        $srv = new InfluxDB('market_spot');
+        $srv->writeData($symbol,'15m',[$bar]);
+    })->addCallbackSink('30m', function($bar) use ($symbol) {
+        $bar['tl'] = $bar['tl'].'000';
+        $srv = new InfluxDB('market_spot');
+        $srv->writeData($symbol,'30m',[$bar]);
+    })->addCallbackSink('1h', function($bar) use ($symbol) {
+        $bar['tl'] = $bar['tl'].'000';
+        $srv = new InfluxDB('market_spot');
+        $srv->writeData($symbol,'1h',[$bar]);
+    })->addCallbackSink('1d', function($bar) use ($symbol) {
+        $bar['tl'] = $bar['tl'].'000';
+        $srv = new InfluxDB('market_spot');
+        $srv->writeData($symbol,'1d',[$bar]);
+    })->addCallbackSink('1w', function($bar) use ($symbol) {
+        $bar['tl'] = $bar['tl'].'000';
+        $srv = new InfluxDB('market_spot');
+        $srv->writeData($symbol,'1w',[$bar]);
+    })->addCallbackSink('1mo', function($bar) use ($symbol) {
+        $bar['tl'] = $bar['tl'].'000';
+        $srv = new InfluxDB('market_spot');
+        $srv->writeData($symbol,'1mo',[$bar]);
+    });
+
+    $t0 = microtime(true);
+    $eng->run();
+    $eng->close();
+    $dt = microtime(true) - $t0;
+    $this->info("Kline data fixed successfully in {$dt} seconds.");
+    return $this->info('ok');
+
     $eng->addInfluxCsvSink('1m',     "$OUTDIR/kline_1m.csv",     $measurement, ['symbol'=>$symbol,'interval'=>'1m'])->enable1mOutput(true);
     $eng->addInfluxCsvSink('5m',     "$OUTDIR/kline_5m.csv",     $measurement, ['symbol'=>$symbol,'interval'=>'5m']);
     $eng->addInfluxCsvSink('15m',    "$OUTDIR/kline_15m.csv",    $measurement, ['symbol'=>$symbol,'interval'=>'15m']);
