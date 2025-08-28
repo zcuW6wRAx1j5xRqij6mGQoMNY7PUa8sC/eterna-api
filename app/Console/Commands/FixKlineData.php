@@ -36,10 +36,18 @@ class FixKlineData extends Command
     $SEED    = 9527;
 
         $opts = [
-        'maxWickPctOfPrice' => 0.004, 
-        'maxWickPips'       => 40, 
-        'wiggleFracOfRange' => 0.25,
+        'maxWickPctOfPrice' => 0.0025, 
+        'maxWickPips'       => 18, 
+        'wiggleFracOfRange' => 0.20,
         'useExtremeWicks'   => false,
+        'hardWickPctOfPricePerInterval' => [
+            '1d'     => 0.0018,   // 0.18%
+            '1month' => 0.0022,   // 0.22%
+        ],
+        'hardWickPipsPerInterval' => [
+            '1d'     => 12,       // 0.0012
+            '1month' => 16,       // 0.0016
+        ],
     ];
 
     (new InfluxDB('market_spot'))->deleteData('ulxusdc'); 

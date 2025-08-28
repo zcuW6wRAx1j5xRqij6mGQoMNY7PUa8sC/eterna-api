@@ -63,6 +63,8 @@ class GenerateKline
     private ?\DateTime $monthCursorStart = null;
     private ?\DateTime $monthCursorEnd   = null;
 
+    private array $hardWickPctOfPricePerInterval = []; // 例：['1d'=>0.0018, '1month'=>0.0025]
+    private array $hardWickPipsPerInterval       = []; // 例：['1d'=>12,     '1month'=>18]
     /* ========================== 构造 ========================== */
     public function __construct(
         string $startTime,
@@ -108,6 +110,13 @@ class GenerateKline
         }
         $this->pipFactor = 10 ** $this->precision;
 
+        if (isset($opts['hardWickPctOfPricePerInterval'])) {
+            $this->hardWickPctOfPricePerInterval = $opts['hardWickPctOfPricePerInterval'];
+        }
+        if (isset($opts['hardWickPipsPerInterval'])) {
+            $this->hardWickPipsPerInterval = $opts['hardWickPipsPerInterval'];
+        }
+
         // 初始化固定聚合器槽位
         foreach ($this->fixedSpecs as $name => $sec) {
             $this->fixedAggs[$name] = [
@@ -131,6 +140,36 @@ class GenerateKline
         $this->on1m = $on1m ? \Closure::fromCallable($on1m) : null;
         return $this;
     }
+
+    private function applyHardWickClamp(string $interval, array &$b): void {
+    // $b 使用的是 pips（整数）
+    $pct = $this->hardWickPctOfPricePerInterval[$interval] ?? 0.0;
+    $abs = $this->hardWickPipsPerInterval[$interval]       ?? 0;
+
+    if ($pct <= 0 && $abs <= 0) return;
+
+    $bodyTop = max($b['o'], $b['c']);
+    $bodyBot = min($b['o'], $b['c']);
+
+    $capPct = (int)max(0, round($bodyTop * $pct)); // 按价格百分比换算成 pips
+    $cap    = $capPct;
+    if ($abs > 0) $cap = ($cap > 0) ? min($cap, $abs) : $abs; // 取较小者；只给一个也行
+
+    if ($cap > 0) {
+        $hiCap = $bodyTop + $cap;
+        $loCap = $bodyBot - $cap;
+        // 同时不越过全局 Lo/Hi
+        $hiCap = min($hiCap, $this->Hi);
+        $loCap = max($loCap, $this->Lo);
+
+        // 夹住
+        $b['h'] = min($b['h'], $hiCap);
+        $b['l'] = max($b['l'], $loCap);
+        // 防御：保持 OHLC 合法
+        if ($b['h'] < $bodyTop) $b['h'] = $bodyTop;
+        if ($b['l'] > $bodyBot) $b['l'] = $bodyBot;
+    }
+}
 
     /**
      * 注册 Influx 注解 CSV sink
@@ -376,6 +415,9 @@ class GenerateKline
         $ag =& $this->fixedAggs[$name];
         if ($ag['bucket'] === null) return;
         $b = $ag['bucket'];
+
+        $this->applyHardWickClamp($name, $b);
+
         $this->emit($name, [
             'tl' => $b['tl'],
             'o' => $this->fmt($b['o']),
@@ -408,6 +450,9 @@ class GenerateKline
     private function flushMonth(): void {
         if ($this->monthBucket === null) return;
         $b = $this->monthBucket;
+        
+        $this->applyHardWickClamp('1month', $b);
+
         $this->emit('1M', [
             'tl'=>$b['tl'],
             'o'=>$this->fmt($b['o']),
