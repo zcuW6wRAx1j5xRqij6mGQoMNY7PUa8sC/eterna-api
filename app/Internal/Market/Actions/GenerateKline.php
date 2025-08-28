@@ -151,7 +151,7 @@ class GenerateKline
         $dt = '#datatype measurement';
         $tagKeys = array_keys($tags);
         foreach ($tagKeys as $_) $dt .= ',tag';
-        $dt .= ',double,double,double,double,long,dateTime:RFC3339';
+        $dt .= ',string,string,string,string,string,dateTime:RFC3339';
         fwrite($fp, $dt . "\n");
 
         // 头行
