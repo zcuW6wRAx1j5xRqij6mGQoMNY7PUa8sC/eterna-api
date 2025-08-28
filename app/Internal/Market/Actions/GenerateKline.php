@@ -378,7 +378,7 @@ class GenerateKline
                     'l'=>$bar['l'],
                     'c'=>$bar['c'],
                     'v'=>$bar['v'],
-                    'tl'=>$bar['tl'],
+                    'tl'=>$bar['tl'].'000',
                 ];
                 $row = [];
                 $row[] = $sink['measurement'];                        // name
