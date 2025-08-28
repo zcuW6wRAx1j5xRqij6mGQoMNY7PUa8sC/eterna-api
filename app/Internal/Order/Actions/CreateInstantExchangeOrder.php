@@ -153,6 +153,7 @@ class CreateInstantExchangeOrder
             $flow->save();
         });
 
+        Log::info('create instant exchange order', ['createWallet'=>$createWallet, 'uid' => $userID, 'coin_id' => $fromCoinID]);
         $createWallet && UserWalletSpot::create(['uid' => $userID, 'coin_id' => $fromCoinID]);
 
         return $result;
