@@ -27,12 +27,12 @@ class FixKlineData extends Command
      */
     public function handle()
     {
-    $START   = '2024-01-01 08:00:00';
-    $END     = '2025-08-28 12:00:00';
-    $OPEN0   = 0.1000;
-    $CLOSE1  = 0.3100;
-    $LOW     = 0.02000;
-    $HIGH    = 0.3400;
+    $START   = '2025-08-28 16:55:00';
+    $END     = '2025-08-28 18:20:00';
+    $OPEN0   = 0.3390;
+    $CLOSE1  = 0.3381;
+    $LOW     = 0.3377;
+    $HIGH    = 0.3391;
     $SEED    = 9527;
 
         $opts = [
@@ -56,7 +56,7 @@ class FixKlineData extends Command
         ],
     ];
 
-    (new InfluxDB('market_spot'))->deleteData('ulxusdc'); 
+    // (new InfluxDB('market_spot'))->deleteData('ulxusdc'); 
 
     $eng =(new GenerateKline($START, $END, $HIGH, $LOW, $OPEN0, $CLOSE1, $SEED, $opts));
 
