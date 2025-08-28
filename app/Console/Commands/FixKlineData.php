@@ -44,7 +44,6 @@ class FixKlineData extends Command
     // 常用周期导出到 CSV：
     $srv = new InfluxDB('market_sport');
     $eng->addCallbackSink('5m',function($bar) use ($srv){
-        dd($bar);
         $srv->writeData('ulxusdc','5m',[$bar]);
     });
 
