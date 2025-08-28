@@ -109,7 +109,10 @@ class SpotController extends ApiController {
 
         $fromCoinID = $request->get('from_coin_id');
         $toCoinID   = $request->get('to_coin_id');
-        $quantity   = number_format(abs($request->get('quantity')), FundsEnums::DecimalPlaces, '.', '');
+        $quantity   = parseNumber($request->get('quantity'));
+        if ($quantity <= 0) {
+            throw new LogicException(__('The amount is incorrect'));
+        }
         if($fromCoinID == $toCoinID) {
             throw new LogicException(__('The operation is unavailable at this time'));
         }
