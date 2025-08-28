@@ -57,8 +57,7 @@ class FixKlineData extends Command
     $measurement = 'kline';
     $symbol      = 'ulxusdc';
 
-    // $eng->addCallbackSink('1m',)
-    $eng->addInfluxCsvSink('1m',     "$OUTDIR/kline_1m.csv",     $measurement, ['symbol'=>$symbol,'interval'=>'1m']);
+    $eng->addInfluxCsvSink('1m',     "$OUTDIR/kline_1m.csv",     $measurement, ['symbol'=>$symbol,'interval'=>'1m'])->enable1mOutput(true);
     $eng->addInfluxCsvSink('5m',     "$OUTDIR/kline_5m.csv",     $measurement, ['symbol'=>$symbol,'interval'=>'5m']);
     $eng->addInfluxCsvSink('15m',    "$OUTDIR/kline_15m.csv",    $measurement, ['symbol'=>$symbol,'interval'=>'15m']);
     $eng->addInfluxCsvSink('30m',    "$OUTDIR/kline_30m.csv",    $measurement, ['symbol'=>$symbol,'interval'=>'30m']);
