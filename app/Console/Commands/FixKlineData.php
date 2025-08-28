@@ -73,7 +73,7 @@ class FixKlineData extends Command
     $eng->addInfluxCsvSink('1h',     "$OUTDIR/kline_1h.csv",     $measurement, ['symbol'=>$symbol,'interval'=>'1h']);
     $eng->addInfluxCsvSink('1d',     "$OUTDIR/kline_1d.csv",     $measurement, ['symbol'=>$symbol,'interval'=>'1d']);
     $eng->addInfluxCsvSink('1w',     "$OUTDIR/kline_1w.csv",     $measurement, ['symbol'=>$symbol,'interval'=>'1w']);
-    $eng->addInfluxCsvSink('1month', "$OUTDIR/kline_1month.csv", $measurement, ['symbol'=>$symbol,'interval'=>'1month']);
+    $eng->addInfluxCsvSink('1mo', "$OUTDIR/kline_1month.csv", $measurement, ['symbol'=>$symbol,'interval'=>'1mo']);
 
     $t0 = microtime(true);
     $eng->run();

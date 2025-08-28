@@ -238,7 +238,7 @@ class GenerateKline
 
         // 启用的周期（有任意 sink 即视为启用）
         $enabledFixed = array_values(array_intersect(array_keys($this->fixedSpecs), array_keys($this->sinks)));
-        $hasMonthSink = !empty($this->sinks['1M']);
+        $hasMonthSink = !empty($this->sinks['1mo']);
         $has1mSink    = $this->emit1m && !empty($this->sinks['1m']);
 
         // 过程参数
@@ -358,7 +358,7 @@ class GenerateKline
         return sqrt(-2 * log($u)) * cos(2 * M_PI * $v);
     }
     private function assertInterval(string $interval): void {
-        static $allowed = ['1m','5m','15m','30m','1h','1d','1w','1month','1M'];
+        static $allowed = ['1m','5m','15m','30m','1h','1d','1w','1month','1mo','1M'];
         if (!in_array($interval, $allowed, true)) {
             throw new \InvalidArgumentException("Unsupported interval: $interval");
         }
@@ -450,10 +450,10 @@ class GenerateKline
     private function flushMonth(): void {
         if ($this->monthBucket === null) return;
         $b = $this->monthBucket;
-        
-        $this->applyHardWickClamp('1month', $b);
 
-        $this->emit('1M', [
+        $this->applyHardWickClamp('1mo', $b);
+
+        $this->emit('1mo', [
             'tl'=>$b['tl'],
             'o'=>$this->fmt($b['o']),
             'h'=>$this->fmt($b['h']),
