@@ -254,7 +254,7 @@ class GenerateKline
         return sqrt(-2*log($u)) * cos(2*M_PI*$v);
     }
     private function assertInterval(string $interval): void {
-        static $allowed = ['1m','5m','15m','30m','1h','1d','1w','1month'];
+        static $allowed = ['1m','5m','15m','30m','1h','1d','1w','1month','1M'];
         if (!in_array($interval, $allowed, true)) {
             throw new \InvalidArgumentException("Unsupported interval: $interval");
         }

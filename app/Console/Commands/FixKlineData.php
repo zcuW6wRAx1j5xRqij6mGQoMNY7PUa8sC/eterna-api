@@ -65,10 +65,6 @@ class FixKlineData extends Command
         $bar['tl'] = $bar['t'].'000';
         $srv = new InfluxDB('market_spot');
         $srv->writeData('ulxusdc','1h',[$bar]);
-    })->addCallbackSink('4h', function($bar){
-        $bar['tl'] = $bar['t'].'000';
-        $srv = new InfluxDB('market_spot');
-        $srv->writeData('ulxusdc','4h',[$bar]);
     })->addCallbackSink('1d', function($bar){
         $bar['tl'] = $bar['t'].'000';
         $srv = new InfluxDB('market_spot');
