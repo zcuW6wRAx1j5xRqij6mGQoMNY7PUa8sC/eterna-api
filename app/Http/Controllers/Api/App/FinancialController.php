@@ -136,7 +136,7 @@ class FinancialController extends ApiController
             // 检查现货可用余额
             $wallet = UserWalletSpot::where('uid', $request->user()->id)->where('coin_id', CoinEnums::DefaultUSDTCoinID)->lockForUpdate()->first();
             if (!$wallet) {
-                throw new LogicException(__('insufficient balance'));
+                throw new LogicException(__('Insufficient balance'));
             }
             $d = bcsub($wallet->amount, $amount, FundsEnums::DecimalPlaces);
             if ($d < 0) {
@@ -219,7 +219,7 @@ class FinancialController extends ApiController
             // 检查现货可用余额
             $wallet = UserWalletSpot::where('uid', $request->user()->id)->where('coin_id', CoinEnums::DefaultUSDTCoinID)->lockForUpdate()->first();
             if (!$wallet) {
-                throw new LogicException(__('insufficient balance'));
+                throw new LogicException(__('Insufficient balance'));
             }
 
             $before = $wallet->amount;

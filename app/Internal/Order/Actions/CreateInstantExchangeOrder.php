@@ -38,11 +38,11 @@ class CreateInstantExchangeOrder
                     'uid'     => $userID,
                     'coin_id' => $fromCoinID,
                 ]);
-                throw new LogicException(__('insufficient balance'));
+                throw new LogicException(__('Insufficient balance'));
             }
 
             if ($originCoinWallet->amount < $quantity) {
-                throw new LogicException(__('insufficient balance'));
+                throw new LogicException(__('Insufficient balance'));
             }
 
             //目标货币钱包
@@ -111,7 +111,7 @@ class CreateInstantExchangeOrder
             $fee             = bcmul($newTargetAmount, $fee, FundsEnums::DecimalPlaces);
             $newTargetAmount = bcsub($newTargetAmount, $fee, FundsEnums::DecimalPlaces); //扣除手续费
             if ($newTargetAmount < 0) {
-                throw new LogicException(__('insufficient balance'));
+                throw new LogicException(__('Insufficient balance'));
             }
 
             $before                       = $originCoinWallet->amount;

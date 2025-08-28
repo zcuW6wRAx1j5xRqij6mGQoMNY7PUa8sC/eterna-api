@@ -12,6 +12,7 @@
     "Incorrect transaction password": "Falsches Transaktionspasswort",
     "The Order status is incorrect": "Der Auftragsstatus ist falsch",
     "Insufficient margin": "Unzureichende Marge",
+    "Insufficient balance": "Unzureichendes Guthaben",
     "Incorrect order type": "Falscher Auftragstyp",
     "Incorrect order status": "Falscher Auftragsstatus",
     "The Position status is incorrect": "Der Positionsstatus ist falsch",
