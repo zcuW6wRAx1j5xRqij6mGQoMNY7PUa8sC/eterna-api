@@ -215,7 +215,7 @@ sql;
             if (in_array($interval,[IntervalEnums::Interval15Minutes,IntervalEnums::Interval30Minutes,])) {
                 $lastKline = null;
                 $resp = collect($resp)->map(function($item) use(&$lastKline){
-                    if ($item['tl'] < '1756420200000' || $item['tl'] >= '1756445400000') {
+                    if ($item['tl'] < '1756402200000' || $item['tl'] >= '1756445400000') {
                         return $item;
                     }
 
@@ -223,6 +223,13 @@ sql;
                         return $item;
                     }
                     if ($item['o'] != $lastKline['c']) {
+                        Log::error('发现k线问题',[
+                            'symbol' => $item['symbol'],
+                            'interval' => $item['interval'],
+                            'time' => $item['tl'],
+                            'last_close' => $lastKline['c'],
+                            'current_open' => $item['o'],
+                        ]);
                         $item['o'] = $lastKline['c'];
                     }
                     $lastKline = $item;
