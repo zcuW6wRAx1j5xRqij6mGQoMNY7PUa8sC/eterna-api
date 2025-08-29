@@ -216,6 +216,7 @@ sql;
                     $errorKline = in_array($item['tl'],[
                         '1756392900000',
                         '1756400100000'
+                        '1756364400000',
                     ]);
                     if ($errorKline) {
                         return false;
