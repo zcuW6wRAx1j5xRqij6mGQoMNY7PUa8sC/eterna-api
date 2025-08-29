@@ -143,7 +143,7 @@ class AdminController extends ApiController
         if ($roleId) {
             $query->where('role_id',$roleId);
         }
-        $data = $query->orderByDesc('created_at')->paginate($request->get('page_size',15),['*'],null, $request->get('page',1));
+        $data = $query->orderByDesc('id')->paginate($request->get('page_size',15),['*'],null, $request->get('page',1));
         return $this->ok(listResp($data));
     }
 
