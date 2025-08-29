@@ -80,7 +80,7 @@ class GenerateKline {
             $trendPrice = $this->calculateTrendPrice($i, $totalMinutes);
             
             // 添加随机波动
-            $volatility = ($this->highPrice - $this->lowPrice) * 0.002;
+            $volatility = ($this->highPrice - $this->lowPrice) * 0.006;
             $noise = $this->generateNoise() * $volatility;
             
             // 生成OHLC
