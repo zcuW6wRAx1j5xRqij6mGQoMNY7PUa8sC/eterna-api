@@ -211,8 +211,8 @@ sql;
         // 去除重复时间戳(刷数据问题)
         if ($binanceSymbol == 'ulxusdc') {
             // 1756420200000
-
             if (in_array($interval,[IntervalEnums::Interval15Minutes,IntervalEnums::Interval30Minutes,])) {
+                Log::info('gggggg');
                 $lastKline = null;
                 $resp = collect($resp)->map(function($item) use(&$lastKline){
                     if ($item['tl'] < '1756402200000' || $item['tl'] >= '1756445400000') {
