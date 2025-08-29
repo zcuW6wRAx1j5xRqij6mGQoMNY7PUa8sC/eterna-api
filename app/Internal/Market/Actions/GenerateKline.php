@@ -190,7 +190,7 @@ class GenerateKline
         $dt = '#datatype measurement';
         $tagKeys = array_keys($tags);
         foreach ($tagKeys as $_) $dt .= ',tag';
-        $dt .= ',string,dateTime:RFC3339';
+        $dt .= ',string,dateTime:number';
         fwrite($fp, $dt . "\n");
 
         // 头行
@@ -389,7 +389,7 @@ class GenerateKline
                 // $row[] = $bar['l']; 
                 // $row[] = $bar['c'];
                 // $row[] = (string)$bar['v'];
-                $row[] = gmdate('Y-m-d\TH:i:s\Z', $bar['tl']);         // RFC3339 Z
+                $row[] = $bar['tl'].'000';
                 fputcsv($sink['fp'], $row);
             } elseif ($type === 'cb') {
                 /** @var \Closure $fn */

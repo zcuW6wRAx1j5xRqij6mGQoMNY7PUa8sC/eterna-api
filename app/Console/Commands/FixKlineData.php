@@ -28,12 +28,12 @@ class FixKlineData extends Command
      */
     public function handle()
     {
-    $START   = '2024-01-01 08:00:00';
-    $END     = '2025-08-28 19:44:00';
+    $START   = '2024-09-01 08:00:00';
+    $END     = '2025-08-29 19:50:00';
     $OPEN0   = 0.0100;
-    $CLOSE1  = 0.3200;
+    $CLOSE1  = 0.3620;
     $LOW     = 0.0020;
-    $HIGH    = 0.3391;
+    $HIGH    = 0.3641;
     $SEED    = 9527;
 
         $opts = [
@@ -57,7 +57,7 @@ class FixKlineData extends Command
         ],
     ];
 
-    (new InfluxDB('market_spot'))->deleteData('ulxusdc'); 
+    // (new InfluxDB('market_spot'))->deleteData('ulxusdc'); 
 
     $eng =(new GenerateKline($START, $END, $HIGH, $LOW, $OPEN0, $CLOSE1, $SEED, $opts));
 
@@ -69,7 +69,7 @@ class FixKlineData extends Command
     if (!is_dir($OUTDIR)) mkdir($OUTDIR, 0777, true);
 
     $measurement = 'kline';
-    $symbol      = 'ulxusdc';
+    $symbol      = 'dddusdc';
 
     // kline,symbol=ulxusdc,interval=1m content="{"o":"0.3381","h":"0.3384","l":"0.3378","c":"0.3391","v":204,"tl":"1756375140000"}" 1756375140000
 
@@ -208,47 +208,5 @@ class FixKlineData extends Command
     $this->info("Kline data fixed successfully in {$dt} seconds.");
 
     return $this->info('ok');
-
-    // 常用周期导出到 CSV：
-    $eng->addCallbackSink('1m', function($bar){
-        $bar['tl'] = $bar['t'].'000';
-        $srv = new InfluxDB('market_spot');
-        $srv->writeData('ulxusdc','1m',[$bar]);
-    })->enable1mOutput(true)
-    ->addCallbackSink('5m',function($bar){
-        $bar['tl'] = $bar['t'].'000';
-        $srv = new InfluxDB('market_spot');
-        $srv->writeData('ulxusdc','5m',[$bar]);
-    })->addCallbackSink('15m', function($bar){
-        $bar['tl'] = $bar['t'].'000';
-        $srv = new InfluxDB('market_spot');
-        $srv->writeData('ulxusdc','15m',[$bar]);
-    })->addCallbackSink('30m', function($bar){
-        $bar['tl'] = $bar['t'].'000';
-        $srv = new InfluxDB('market_spot');
-        $srv->writeData('ulxusdc','30m',[$bar]);
-    })->addCallbackSink('1h', function($bar) {
-        $bar['tl'] = $bar['t'].'000';
-        $srv = new InfluxDB('market_spot');
-        $srv->writeData('ulxusdc','1h',[$bar]);
-    })->addCallbackSink('1d', function($bar){
-        $bar['tl'] = $bar['t'].'000';
-        $srv = new InfluxDB('market_spot');
-        $srv->writeData('ulxusdc','1d',[$bar]);
-    })->addCallbackSink('1w', function($bar){
-        $bar['tl'] = $bar['t'].'000';
-        $srv = new InfluxDB('market_spot');
-        $srv->writeData('ulxusdc','1w',[$bar]);
-    })->addCallbackSink('1M', function($bar){
-        $bar['tl'] = $bar['t'].'000';
-        $srv = new InfluxDB('market_spot');
-        $srv->writeData('ulxusdc','1M',[$bar]);
-    });
-
-    $t0 = microtime(true);
-    $eng->run();
-    $eng->close();
-    $dt = microtime(true) - $t0;
-    $this->info("Kline data fixed successfully in {$dt} seconds.");
-}
+    }
 }
