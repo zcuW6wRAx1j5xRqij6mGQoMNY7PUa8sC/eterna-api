@@ -212,6 +212,16 @@ sql;
         if ($binanceSymbol == 'ulxusdc') {
             if ($interval == IntervalEnums::Interval1Day) {
                 // 1day 只保留有成交量的
+                $resp = collect($resp)->map(function($item){
+                    if ($item['tl'] == '1756339200000') {
+                        $item['o'] = '0.3157';
+                        $item['c'] = '0.323';
+                        $item['h'] = '0.333';
+                        $item['l'] = '0.3157';
+                    }
+                    return $item;
+                })->values()->all();
+
                 $resp = collect($resp)->filter(function($item){
                     $errorKline = in_array($item['tl'],[
                         '1756392900000',
