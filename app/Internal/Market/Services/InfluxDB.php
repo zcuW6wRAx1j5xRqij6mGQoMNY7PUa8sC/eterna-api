@@ -2,6 +2,7 @@
 
 namespace Internal\Market\Services;
 
+use App\Enums\IntervalEnums;
 use App\Exceptions\LogicException;
 use InfluxDB2\WriteType as WriteType;
 use Carbon\Carbon;
@@ -209,6 +210,22 @@ sql;
         }
         // 去除重复时间戳(刷数据问题)
         if ($binanceSymbol == 'ulxusdc') {
+            if ($interval == IntervalEnums::Interval1Day) {
+                // 1day 只保留有成交量的
+                $resp = collect($resp)->filter(function($item){
+                    $errorKline = in_array($item['tl'],[
+                        '1756392900000',
+                        '1756400100000'
+                    ]);
+                    if ($errorKline) {
+                        return false;
+                    }
+                    return true;
+                })->values()->all();
+                
+                return $resp;
+            }
+
             $resp = collect($resp)->filter(function($item){
                 if ($item['tl'] <= 1756385100000) {
                     return true;
@@ -218,42 +235,6 @@ sql;
                 }
                 return false;
             })->values()->all();
-
-
-            // $resp = collect($resp)
-            //     ->groupBy('tl')
-            //     ->flatMap(function ($group) {
-            //         // 如何获得 tl 数据? 
-            //         $tl = $group->first()['tl'] ?? null;
-            //         if ($tl <= '1756385100000') {
-            //             return $group->filter(function ($item) {
-            //                 return isset($item['co']);
-            //             });
-            //             // return false;
-            //         }
-
-            //         // if ($tl <= '1742842800000') {
-            //         //     return $group->filter(function ($item) {
-            //         //         return !empty($item['co']);
-            //         //     });
-            //         // }
-            //         // return $group->filter(function ($item) {
-            //         //     return empty($item['co']);
-            //         // });
-
-            //         $hasNonEmptyData = $group->contains(function ($item) {
-            //             return isset($item['co']);
-            //         });
-
-            //         if ($hasNonEmptyData) {
-            //             return $group->filter(function ($item) {
-            //                 return isset($item['co']);
-            //             });
-            //         }
-            //         return $group;
-            //     })
-            //     ->values()
-            //     ->all();
         }
         return $resp;
     }
