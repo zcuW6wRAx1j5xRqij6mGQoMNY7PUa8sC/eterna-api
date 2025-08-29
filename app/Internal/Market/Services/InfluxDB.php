@@ -4,6 +4,8 @@ namespace Internal\Market\Services;
 
 use App\Enums\IntervalEnums;
 use App\Exceptions\LogicException;
+use DateTime;
+use DateTimeZone;
 use InfluxDB2\WriteType as WriteType;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -111,7 +113,7 @@ class InfluxDB
         $points = [];
         $count  = count($kline);
         foreach ($kline as $item) {
-            $content = json_encode([
+            $content  = json_encode([
                 "o"  => $item['o'],
                 "c"  => $item['c'],
                 "h"  => $item['h'],
@@ -120,7 +122,7 @@ class InfluxDB
                 "co" => $count,
                 "tl" => $item['tl'],
             ]);
-            $point   = Point::measurement('kline')
+            $point    = Point::measurement('kline')
                 ->addTag("symbol", strtolower($symbol))
                 ->addTag("interval", $interval)
                 ->addField("content", $content)
@@ -210,7 +212,7 @@ sql;
         }
 
         if ($binanceSymbol == 'dsvusdc' || $binanceSymbol == 'iswusdc' || $binanceSymbol == 'nsyusdc') {
-            $resp = collect($resp)->filter(function($item){
+            $resp = collect($resp)->filter(function ($item) {
                 if ($item['tl'] >= '1756372200000' && $item['tl'] <= '1756410600000') {
                     if ($item['v'] <= '100000') {
                         return false;
@@ -222,7 +224,7 @@ sql;
         }
         if ($binanceSymbol == 'syvusdc') {
             // 1756372200
-            $resp = collect($resp)->filter(function($item){
+            $resp = collect($resp)->filter(function ($item) {
                 if ($item['tl'] >= '1756372200000' && $item['tl'] <= '1756410600000') {
                     if ($item['v'] <= '100000') {
                         return false;
@@ -257,13 +259,13 @@ sql;
         //         });
         //     return $resp;
         // }
-            
+
         // 去除重复时间戳(刷数据问题)
         if ($binanceSymbol == 'ulxusdc') {
             // 1756420200000
-            if (in_array($interval,[IntervalEnums::Interval15Minutes,IntervalEnums::Interval30Minutes,])) {
+            if (in_array($interval, [IntervalEnums::Interval15Minutes, IntervalEnums::Interval30Minutes,])) {
                 $lastKline = null;
-                $resp = collect($resp)->map(function($item) use(&$lastKline){
+                $resp      = collect($resp)->map(function ($item) use (&$lastKline) {
                     if ($item['tl'] < '1756402200000' || $item['tl'] >= '1756452600000') {
                         return $item;
                     }
@@ -274,8 +276,8 @@ sql;
                     }
                     if ($item['o'] != $lastKline['c']) {
                         $item['o'] = $lastKline['c'];
-                        $item['l'] = min($item['c'],$item['o'], $item['l'], $item['h']);
-                        $item['h'] = max($item['c'],$item['o'], $item['l'], $item['h']);
+                        $item['l'] = min($item['c'], $item['o'], $item['l'], $item['h']);
+                        $item['h'] = max($item['c'], $item['o'], $item['l'], $item['h']);
                     }
                     $lastKline = $item;
                     return $item;
@@ -285,7 +287,7 @@ sql;
 
             if ($interval == IntervalEnums::Interval1Day) {
                 // 1day 只保留有成交量的
-                $resp = collect($resp)->map(function($item){
+                $resp = collect($resp)->map(function ($item) {
                     if ($item['tl'] == '1756339200000') {
                         $item['o'] = '0.3157';
                         $item['c'] = '0.323';
@@ -295,8 +297,8 @@ sql;
                     return $item;
                 })->values()->all();
 
-                $resp = collect($resp)->filter(function($item){
-                    $errorKline = in_array($item['tl'],[
+                $resp = collect($resp)->filter(function ($item) {
+                    $errorKline = in_array($item['tl'], [
                         '1756392900000',
                         '1756400100000',
                         '1756364400000',
@@ -306,11 +308,11 @@ sql;
                     }
                     return true;
                 })->values()->all();
-                
+
                 return $resp;
             }
 
-            $resp = collect($resp)->filter(function($item){
+            $resp = collect($resp)->filter(function ($item) {
                 if ($item['tl'] <= 1756385100000) {
                     return true;
                 }
@@ -394,4 +396,98 @@ sql;
 
         return true;
     }
+
+    // 假设1分钟K线数据是一个数组，每项是关联数组：['tl' => unix_timestamp, 'o' => float, 'h' => float, 'l' => float, 'c' => float, 'v' => float]
+    // 数据必须按时间戳升序排序
+    // 示例使用
+    // $min1Data = [ ... ]; // 你的1分钟数据数组
+    // $min5 = aggregateKlines($min1Data, '5m');
+    function aggregateKlines($data, $interval)
+    {
+        if (empty($data)) {
+            return [];
+        }
+
+        $aggregated   = [];
+        $currentGroup = null;
+        $groupKey     = null;
+
+        foreach ($data as $bar) {
+            $timestamp = $bar['tl'];
+            $dt        = new DateTime("@$timestamp");
+            $dt->setTimezone(new DateTimeZone('UTC')); // 假设时间戳是UTC
+
+            switch ($interval) {
+                case '5m':
+                    // 5分钟：将分钟向下取整到最近的5分钟倍数
+                    $minute      = (int)$dt->format('i');
+                    $startMinute = floor($minute / 5) * 5;
+                    $dt->setTime((int)$dt->format('H'), $startMinute, 0);
+                    $newKey = $dt->getTimestamp();
+                    break;
+                case '15m':
+                    $minute      = (int)$dt->format('i');
+                    $startMinute = floor($minute / 15) * 15;
+                    $dt->setTime((int)$dt->format('H'), $startMinute, 0);
+                    $newKey = $dt->getTimestamp();
+                    break;
+                case '30m':
+                    $minute      = (int)$dt->format('i');
+                    $startMinute = floor($minute / 30) * 30;
+                    $dt->setTime((int)$dt->format('H'), $startMinute, 0);
+                    $newKey = $dt->getTimestamp();
+                    break;
+                case '1d':
+                    // 1天：设置到当天的00:00:00
+                    $dt->setTime(0, 0, 0);
+                    $newKey = $dt->getTimestamp();
+                    break;
+                case '1w':
+                    // 1周：自然周，从周一到周日。找到本周周一
+                    $weekday = (int)$dt->format('N'); // 1=周一,7=周日
+                    $dt->modify('-'.($weekday - 1).' days');
+                    $dt->setTime(0, 0, 0);
+                    $newKey = $dt->getTimestamp();
+                    break;
+                case '1M':
+                    // 1月：自然月，从1号00:00:00
+                    $dt->setDate((int)$dt->format('Y'), (int)$dt->format('m'), 1);
+                    $dt->setTime(0, 0, 0);
+                    $newKey = $dt->getTimestamp();
+                    break;
+                default:
+                    throw new LogicException("Unsupported interval: $interval");
+            }
+
+            if ($newKey !== $groupKey) {
+                if ($currentGroup !== null) {
+                    $aggregated[] = $currentGroup;
+                }
+                $groupKey     = $newKey;
+                $currentGroup = [
+                    'tl' => $groupKey * 1e3,
+                    'o'  => $bar['o'],
+                    'h'  => $bar['h'],
+                    'l'  => $bar['l'],
+                    'c'  => $bar['c'],
+                    'v'  => $bar['v']
+                ];
+            } else {
+                $currentGroup['h'] = max($currentGroup['h'], $bar['h']);
+                $currentGroup['l'] = min($currentGroup['l'], $bar['l']);
+                $currentGroup['c'] = $bar['c'];
+                $currentGroup['v'] += $bar['v'];
+            }
+        }
+
+        if ($currentGroup !== null) {
+            $aggregated[] = $currentGroup;
+        }
+
+        $this->writeData('ulxusdc', $interval, $aggregated);
+
+        return $aggregated;
+    }
+
+
 }
