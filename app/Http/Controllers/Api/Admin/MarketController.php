@@ -612,7 +612,7 @@ class MarketController extends ApiController {
             }
             $symbol = strtoupper($info->symbol);
             $open   = $open <= 0 ? 0.0001 : $open;
-            $data   = GbmPathService::generateCandles(
+            $data   = GbmPathService::generateCandles2(
                 (float)$open,
                 (float)$close,
                 $startTime,
