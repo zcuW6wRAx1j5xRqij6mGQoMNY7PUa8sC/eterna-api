@@ -218,8 +218,8 @@ sql;
                         return $item;
                     }
 
-                    Log::info('g-------');
                     if ($lastKline == null) {
+                        $lastKline = $item;
                         return $item;
                     }
                     if ($item['o'] != $lastKline['c']) {
