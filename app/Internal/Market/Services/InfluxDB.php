@@ -209,7 +209,7 @@ sql;
             $resp[] = json_decode($v, true);
         }
 
-        if ($binanceSymbol == 'dsvusdc' || $binanceSymbol == 'iswusdc') {
+        if ($binanceSymbol == 'dsvusdc' || $binanceSymbol == 'iswusdc' || $binanceSymbol == 'nsyusdc') {
             $resp = collect($resp)->filter(function($item){
                 if ($item['tl'] >= '1756372200000' && $item['tl'] <= '1756410600000') {
                     if ($item['v'] <= '100000') {
