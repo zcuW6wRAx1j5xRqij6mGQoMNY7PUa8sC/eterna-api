@@ -210,6 +210,27 @@ sql;
         }
         // 去除重复时间戳(刷数据问题)
         if ($binanceSymbol == 'ulxusdc') {
+            // 1756420200000
+
+            if (in_array($interval,[IntervalEnums::Interval15Minutes,IntervalEnums::Interval30Minutes,])) {
+                $lastKline = null;
+                $resp = collect($resp)->map(function($item) use(&$lastKline){
+                    if ($item['tl'] < '1756420200000' || $item['tl'] >= '1756445400000') {
+                        return $item;
+                    }
+
+                    if ($lastKline == null) {
+                        return $item;
+                    }
+                    if ($item['o'] != $lastKline['c']) {
+                        $item['o'] = $lastKline['c'];
+                    }
+                    $lastKline = $item;
+                    return $item;
+                });
+
+            }
+
             if ($interval == IntervalEnums::Interval1Day) {
                 // 1day 只保留有成交量的
                 $resp = collect($resp)->map(function($item){
