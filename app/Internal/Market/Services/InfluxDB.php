@@ -224,8 +224,8 @@ sql;
                     }
                     if ($item['o'] != $lastKline['c']) {
                         $item['o'] = $lastKline['c'];
-                        $item['l'] = min($item['l'],$item['o'], $item['l'], $item['h']);
-                        $item['h'] = max($item['l'],$item['o'], $item['l'], $item['h']);
+                        $item['l'] = min($item['c'],$item['o'], $item['l'], $item['h']);
+                        $item['h'] = max($item['c'],$item['o'], $item['l'], $item['h']);
                     }
                     $lastKline = $item;
                     return $item;
