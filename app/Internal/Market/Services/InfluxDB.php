@@ -212,13 +212,13 @@ sql;
         if ($binanceSymbol == 'ulxusdc') {
             // 1756420200000
             if (in_array($interval,[IntervalEnums::Interval15Minutes,IntervalEnums::Interval30Minutes,])) {
-                Log::info('gggggg');
                 $lastKline = null;
                 $resp = collect($resp)->map(function($item) use(&$lastKline){
                     if ($item['tl'] < '1756402200000' || $item['tl'] >= '1756445400000') {
                         return $item;
                     }
 
+                    Log::info('g-------');
                     if ($lastKline == null) {
                         return $item;
                     }
