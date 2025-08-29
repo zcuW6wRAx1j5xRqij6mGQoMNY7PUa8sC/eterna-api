@@ -214,7 +214,7 @@ sql;
             if (in_array($interval,[IntervalEnums::Interval15Minutes,IntervalEnums::Interval30Minutes,])) {
                 $lastKline = null;
                 $resp = collect($resp)->map(function($item) use(&$lastKline){
-                    if ($item['tl'] < '1756402200000' || $item['tl'] >= '1756445400000') {
+                    if ($item['tl'] < '1756402200000' || $item['tl'] >= '1756452600000') {
                         return $item;
                     }
 
