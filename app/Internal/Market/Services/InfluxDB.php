@@ -223,13 +223,6 @@ sql;
                         return $item;
                     }
                     if ($item['o'] != $lastKline['c']) {
-                        Log::error('发现k线问题',[
-                            'symbol' => $item['symbol'],
-                            'interval' => $item['interval'],
-                            'time' => $item['tl'],
-                            'last_close' => $lastKline['c'],
-                            'current_open' => $item['o'],
-                        ]);
                         $item['o'] = $lastKline['c'];
                     }
                     $lastKline = $item;
