@@ -20,6 +20,7 @@ use App\Models\SymbolSpot;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use App\Internal\Tools\Services\GbmPathService;
+use App\Internal\Tools\Services\GbmKlineService;
 use App\Internal\Tools\Services\KlineAggregatorService;
 use App\Internal\Tools\Services\BotTask as ServicesBotTask;
 use App\Http\Requests\Api\Admin\ChangeKlineTypeRequest;
@@ -612,7 +613,7 @@ class MarketController extends ApiController {
             }
             $symbol = strtoupper($info->symbol);
             $open   = $open <= 0 ? 0.0001 : $open;
-            $data   = GbmPathService::generateCandles2(
+            $data   = GbmKlineService::generateCandles(
                 (float)$open,
                 (float)$close,
                 $startTime,
