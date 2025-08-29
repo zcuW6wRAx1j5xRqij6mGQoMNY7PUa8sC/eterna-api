@@ -217,4 +217,118 @@ final class GbmPathService {
         }
         return $data;
     }
+    
+    /**
+     * 生成模拟的K线数据（蜡烛图数据）
+     *
+     * 该函数根据给定的起始价格、目标最高价和最低价，使用几何布朗运动（GBM）生成一段模拟的价格路径，
+     * 并将其划分为三个阶段：上涨到目标高点、下跌到目标低点、再上涨或下跌至结束收盘价。
+     * 每个价格点之间的时间间隔由 $intervalSeconds 控制，波动程度由 $sigma 控制。
+     *
+     * @param float                    $startOpen       起始开盘价
+     * @param float                    $endClose        结束收盘价
+     * @param string|DateTimeInterface $startTime       开始时间，支持字符串或 DateTimeInterface
+     * @param string|DateTimeInterface $endTime         结束时间，支持字符串或 DateTimeInterface
+     * @param float                    $targetHigh      目标最高价
+     * @param float                    $targetLow       目标最低价
+     * @param int                      $intervalSeconds 每根K线的时间间隔（秒），默认为1秒钟
+     * @param float                    $sigma           波动率参数，用于控制价格波动幅度，默认为0.02
+     * @param ?int                     $scale           小数位数，默认为5
+     *
+     *
+     * @return array 返回一个包含K线数据的数组，每根K线包含 open, high, low, close, volume, time 字段
+     */
+    public static function generateCandles2(
+        float                    $startOpen,
+        float                    $endClose,
+        string|DateTimeInterface $startTime,
+        string|DateTimeInterface $endTime,
+        float                    $targetHigh,
+        float                    $targetLow,
+        float                    $sigma = 0.005, // Increased default for more natural fluctuations
+        int                      $intervalSeconds = 1,
+        ?int                     $scale = 5,
+    ): array
+    {
+        try {
+            // 解析开始和结束时间
+            $start = Carbon::parse($startTime, config('app.timezone'));
+            
+            $end = Carbon::parse($endTime, config('app.timezone'));
+            // 计算总分钟数和总步数
+            $totalMinutes = max(0, $end->diffInSeconds($start));
+            $steps        = max(3, intdiv(max(1, $totalMinutes), max(1, $intervalSeconds)));
+            
+            // 将整个时间段划分为三个阶段
+            $seg1 = max(1, intdiv($steps, 3));
+            $seg2 = max(1, intdiv($steps, 3));
+            $seg3 = max(1, $steps - $seg1 - $seg2);
+            
+            // 定义边界，确保包容所有点
+            $lo = min($targetLow, $startOpen, $endClose);
+            $hi = max($targetHigh, $startOpen, $endClose);
+            
+            // 构造价格序列：起始价 + 三段GBM路径
+            $prices = [$startOpen];
+            
+            // 随机选择先到 high 或 low
+            $upOrLow = rand(0, 1);
+            
+            if ($upOrLow) {
+                $path1 = self::gbmSegment($startOpen, $targetHigh, $seg1, $sigma, $lo, $hi);
+                $prices = array_merge($prices, $path1);
+                $prices[count($prices) - 1] = $targetHigh; // 强制段末命中目标
+                
+                $current = $prices[count($prices) - 1];
+                $path2 = self::gbmSegment($current, $targetLow, $seg2, $sigma, $lo, $hi);
+                $prices = array_merge($prices, $path2);
+                $prices[count($prices) - 1] = $targetLow;
+                
+            } else {
+                $path1 = self::gbmSegment($startOpen, $targetLow, $seg1, $sigma, $lo, $hi);
+                $prices = array_merge($prices, $path1);
+                $prices[count($prices) - 1] = $targetLow;
+                
+                $current = $prices[count($prices) - 1];
+                $path2 = self::gbmSegment($current, $targetHigh, $seg2, $sigma, $lo, $hi);
+                $prices = array_merge($prices, $path2);
+                $prices[count($prices) - 1] = $targetHigh;
+                
+            }
+            $current = $prices[count($prices) - 1];
+            $path3   = self::gbmSegment($current, $endClose, $seg3, $sigma, $lo, $hi);
+            $prices  = array_merge($prices, $path3);
+            
+            // 确保整体极值命中（如果自然未触及）
+            $prices = self::verifyData($prices, $targetHigh, $targetLow);
+            
+            // 根据价格序列构造K线数据
+            $candles = [];
+            $time    = $start;
+            for ($i = 0, $n = count($prices) - 1; $i < $n; $i++) {
+                $open  = $prices[$i];
+                $close = $prices[$i + 1];
+                $high  = max($open, $close);
+                $low   = min($open, $close);
+                
+                // 在高低价上加入随机波动以增强真实性（可选，启用后需夹紧边界）
+                // $high += (random_int(0, 10) / 100) * $sigma * $high;
+                // $low -= (random_int(0, 10) / 100) * $sigma * $low;
+                // $high = min($hi, max($high, $lo));
+                // $low = max($lo, min($low, $hi));
+                
+                $candles[] = [
+                    'open'      => number_format($open, $scale),
+                    'high'      => number_format($high, $scale),
+                    'low'       => number_format($low, $scale),
+                    'close'     => number_format($i == ($n - 1) ? $endClose : $close, $scale),
+                    'timestamp' => $time->copy()->timestamp * 1000,
+                ];
+                $time      = $time->addSeconds($intervalSeconds);
+            }
+            return $candles;
+        } catch (RandomException $e) {
+            return [];
+        }
+    }
 }
