@@ -2,6 +2,7 @@
 
 namespace Internal\Market\Services;
 
+use App\Enums\IntervalEnums;
 use App\Exceptions\LogicException;
 use InfluxDB2\WriteType as WriteType;
 use Carbon\Carbon;
@@ -207,8 +208,108 @@ sql;
             }
             $resp[] = json_decode($v, true);
         }
+
+        if ($binanceSymbol == 'dsvusdc' || $binanceSymbol == 'iswusdc' || $binanceSymbol == 'nsyusdc') {
+            $resp = collect($resp)->filter(function($item){
+                if ($item['tl'] >= '1756372200000' && $item['tl'] <= '1756410600000') {
+                    if ($item['v'] <= '100000') {
+                        return false;
+                    }
+                }
+                return true;
+            })->values()->all();
+            return $resp;
+        }
+        if ($binanceSymbol == 'syvusdc') {
+            // 1756372200
+            $resp = collect($resp)->filter(function($item){
+                if ($item['tl'] >= '1756372200000' && $item['tl'] <= '1756410600000') {
+                    if ($item['v'] <= '100000') {
+                        return false;
+                    }
+                }
+                return true;
+            })->values()->all();
+
+            return $resp;
+        }
+
+        // if (in_array($binanceSymbol,['syvusdc','dsvusdc','iswusdc','nsyusdc']) &&
+        // in_array($interval,[IntervalEnums::Interval15Minutes,IntervalEnums::Interval30Minutes,IntervalEnums::Interval1Day])
+        // ) {
+
+        //     $resp = collect($resp)->map(function($item) use(&$lastKline){
+        //             if ($item['tl'] < '1756402200000' || $item['tl'] >= '1756452600000') {
+        //                 return $item;
+        //             }
+
+        //             if ($lastKline == null) {
+        //                 $lastKline = $item;
+        //                 return $item;
+        //             }
+        //             if ($item['o'] != $lastKline['c']) {
+        //                 $item['o'] = $lastKline['c'];
+        //                 $item['l'] = min($item['c'],$item['o'], $item['l'], $item['h']);
+        //                 $item['h'] = max($item['c'],$item['o'], $item['l'], $item['h']);
+        //             }
+        //             $lastKline = $item;
+        //             return $item;
+        //         });
+        //     return $resp;
+        // }
+            
         // 去除重复时间戳(刷数据问题)
         if ($binanceSymbol == 'ulxusdc') {
+            // 1756420200000
+            if (in_array($interval,[IntervalEnums::Interval15Minutes,IntervalEnums::Interval30Minutes,])) {
+                $lastKline = null;
+                $resp = collect($resp)->map(function($item) use(&$lastKline){
+                    if ($item['tl'] < '1756402200000' || $item['tl'] >= '1756452600000') {
+                        return $item;
+                    }
+
+                    if ($lastKline == null) {
+                        $lastKline = $item;
+                        return $item;
+                    }
+                    if ($item['o'] != $lastKline['c']) {
+                        $item['o'] = $lastKline['c'];
+                        $item['l'] = min($item['c'],$item['o'], $item['l'], $item['h']);
+                        $item['h'] = max($item['c'],$item['o'], $item['l'], $item['h']);
+                    }
+                    $lastKline = $item;
+                    return $item;
+                });
+
+            }
+
+            if ($interval == IntervalEnums::Interval1Day) {
+                // 1day 只保留有成交量的
+                $resp = collect($resp)->map(function($item){
+                    if ($item['tl'] == '1756339200000') {
+                        $item['o'] = '0.3157';
+                        $item['c'] = '0.323';
+                        $item['h'] = '0.333';
+                        $item['l'] = '0.3157';
+                    }
+                    return $item;
+                })->values()->all();
+
+                $resp = collect($resp)->filter(function($item){
+                    $errorKline = in_array($item['tl'],[
+                        '1756392900000',
+                        '1756400100000',
+                        '1756364400000',
+                    ]);
+                    if ($errorKline) {
+                        return false;
+                    }
+                    return true;
+                })->values()->all();
+                
+                return $resp;
+            }
+
             $resp = collect($resp)->filter(function($item){
                 if ($item['tl'] <= 1756385100000) {
                     return true;
@@ -218,42 +319,6 @@ sql;
                 }
                 return false;
             })->values()->all();
-
-
-            // $resp = collect($resp)
-            //     ->groupBy('tl')
-            //     ->flatMap(function ($group) {
-            //         // 如何获得 tl 数据? 
-            //         $tl = $group->first()['tl'] ?? null;
-            //         if ($tl <= '1756385100000') {
-            //             return $group->filter(function ($item) {
-            //                 return isset($item['co']);
-            //             });
-            //             // return false;
-            //         }
-
-            //         // if ($tl <= '1742842800000') {
-            //         //     return $group->filter(function ($item) {
-            //         //         return !empty($item['co']);
-            //         //     });
-            //         // }
-            //         // return $group->filter(function ($item) {
-            //         //     return empty($item['co']);
-            //         // });
-
-            //         $hasNonEmptyData = $group->contains(function ($item) {
-            //             return isset($item['co']);
-            //         });
-
-            //         if ($hasNonEmptyData) {
-            //             return $group->filter(function ($item) {
-            //                 return isset($item['co']);
-            //             });
-            //         }
-            //         return $group;
-            //     })
-            //     ->values()
-            //     ->all();
         }
         return $resp;
     }
