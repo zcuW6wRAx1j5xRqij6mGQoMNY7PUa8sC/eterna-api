@@ -234,6 +234,30 @@ sql;
             return $resp;
         }
 
+        // if (in_array($binanceSymbol,['syvusdc','dsvusdc','iswusdc','nsyusdc']) &&
+        // in_array($interval,[IntervalEnums::Interval15Minutes,IntervalEnums::Interval30Minutes,IntervalEnums::Interval1Day])
+        // ) {
+
+        //     $resp = collect($resp)->map(function($item) use(&$lastKline){
+        //             if ($item['tl'] < '1756402200000' || $item['tl'] >= '1756452600000') {
+        //                 return $item;
+        //             }
+
+        //             if ($lastKline == null) {
+        //                 $lastKline = $item;
+        //                 return $item;
+        //             }
+        //             if ($item['o'] != $lastKline['c']) {
+        //                 $item['o'] = $lastKline['c'];
+        //                 $item['l'] = min($item['c'],$item['o'], $item['l'], $item['h']);
+        //                 $item['h'] = max($item['c'],$item['o'], $item['l'], $item['h']);
+        //             }
+        //             $lastKline = $item;
+        //             return $item;
+        //         });
+        //     return $resp;
+        // }
+            
         // 去除重复时间戳(刷数据问题)
         if ($binanceSymbol == 'ulxusdc') {
             // 1756420200000
