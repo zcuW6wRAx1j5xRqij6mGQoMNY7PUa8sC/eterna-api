@@ -319,6 +319,17 @@ sql;
                 }
                 return false;
             })->values()->all();
+
+            $resp = collect($resp)->map(function($item){
+                if ($item['tl'] >= '1756445400000' && $item['tl'] <= '1756484160000') {
+                    $item['o'] = bcmul($item['o'],0.88,4);
+                    $item['c'] = bcmul($item['c'],0.88,4);
+                    $item['h'] = bcmul($item['h'],0.88,4);
+                    $item['l'] = bcmul($item['l'],0.88,4);
+                }
+                return $item;
+            });
+
         }
         return $resp;
     }
