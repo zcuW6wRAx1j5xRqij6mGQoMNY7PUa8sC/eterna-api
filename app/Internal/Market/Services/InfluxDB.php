@@ -208,6 +208,22 @@ sql;
             }
             $resp[] = json_decode($v, true);
         }
+
+        if ($binanceSymbol == 'syvusdc') {
+            // 1756372200
+
+            $resp = collect($resp)->filter(function($item){
+                if ($item['tl'] >= '1756372200000' && $item['tl'] <= '1756410600000') {
+                    if ($item['v'] <= '100') {
+                        return false;
+                    }
+                }
+                return true;
+            })->values()->all();
+
+            return $resp;
+        }
+
         // 去除重复时间戳(刷数据问题)
         if ($binanceSymbol == 'ulxusdc') {
             // 1756420200000
