@@ -236,11 +236,12 @@ sql;
             return $resp;
         }
 
-        // if (in_array($binanceSymbol,['syvusdc','dsvusdc','iswusdc','nsyusdc']) &&
-        // in_array($interval,[IntervalEnums::Interval15Minutes,IntervalEnums::Interval30Minutes,IntervalEnums::Interval1Day])
-        // ) {
-
-        //     $resp = collect($resp)->map(function($item) use(&$lastKline){
+        // 去除重复时间戳(刷数据问题)
+        // if ($binanceSymbol == 'ulxusdc') {
+        //     // 1756420200000
+        //     if (in_array($interval, [IntervalEnums::Interval15Minutes, IntervalEnums::Interval30Minutes,])) {
+        //         $lastKline = null;
+        //         $resp      = collect($resp)->map(function ($item) use (&$lastKline) {
         //             if ($item['tl'] < '1756402200000' || $item['tl'] >= '1756452600000') {
         //                 return $item;
         //             }
@@ -251,88 +252,63 @@ sql;
         //             }
         //             if ($item['o'] != $lastKline['c']) {
         //                 $item['o'] = $lastKline['c'];
-        //                 $item['l'] = min($item['c'],$item['o'], $item['l'], $item['h']);
-        //                 $item['h'] = max($item['c'],$item['o'], $item['l'], $item['h']);
+        //                 $item['l'] = min($item['c'], $item['o'], $item['l'], $item['h']);
+        //                 $item['h'] = max($item['c'], $item['o'], $item['l'], $item['h']);
         //             }
         //             $lastKline = $item;
         //             return $item;
         //         });
-        //     return $resp;
+
+        //     }
+
+        //     if ($interval == IntervalEnums::Interval1Day) {
+        //         // 1day 只保留有成交量的
+        //         $resp = collect($resp)->map(function ($item) {
+        //             if ($item['tl'] == '1756339200000') {
+        //                 $item['o'] = '0.3157';
+        //                 $item['c'] = '0.323';
+        //                 $item['h'] = '0.333';
+        //                 $item['l'] = '0.3157';
+        //             }
+        //             return $item;
+        //         })->values()->all();
+
+        //         $resp = collect($resp)->filter(function ($item) {
+        //             $errorKline = in_array($item['tl'], [
+        //                 '1756392900000',
+        //                 '1756400100000',
+        //                 '1756364400000',
+        //             ]);
+        //             if ($errorKline) {
+        //                 return false;
+        //             }
+        //             return true;
+        //         })->values()->all();
+
+        //         return $resp;
+        //     }
+
+        //     $resp = collect($resp)->filter(function ($item) {
+        //         if ($item['tl'] <= 1756385100000) {
+        //             return true;
+        //         }
+        //         if (isset($item['co'])) {
+        //             return true;
+        //         }
+        //         return false;
+        //     })->values()->all();
+
+        //     $resp = collect($resp)->map(function($item){
+        //         if ($item['tl'] >= '1756445400000' && $item['tl'] <= '1756483920000') {
+        //             $item['o'] = bcmul($item['o'],0.88,4);
+        //             $item['c'] = bcmul($item['c'],0.88,4);
+        //             $item['h'] = bcmul($item['h'],0.88,4);
+        //             $item['l'] = bcmul($item['l'],0.88,4);
+        //         }
+        //         return $item;
+        //     });
+
         // }
-
-        // 去除重复时间戳(刷数据问题)
-        if ($binanceSymbol == 'ulxusdc') {
-            // 1756420200000
-            if (in_array($interval, [IntervalEnums::Interval15Minutes, IntervalEnums::Interval30Minutes,])) {
-                $lastKline = null;
-                $resp      = collect($resp)->map(function ($item) use (&$lastKline) {
-                    if ($item['tl'] < '1756402200000' || $item['tl'] >= '1756452600000') {
-                        return $item;
-                    }
-
-                    if ($lastKline == null) {
-                        $lastKline = $item;
-                        return $item;
-                    }
-                    if ($item['o'] != $lastKline['c']) {
-                        $item['o'] = $lastKline['c'];
-                        $item['l'] = min($item['c'], $item['o'], $item['l'], $item['h']);
-                        $item['h'] = max($item['c'], $item['o'], $item['l'], $item['h']);
-                    }
-                    $lastKline = $item;
-                    return $item;
-                });
-
-            }
-
-            if ($interval == IntervalEnums::Interval1Day) {
-                // 1day 只保留有成交量的
-                $resp = collect($resp)->map(function ($item) {
-                    if ($item['tl'] == '1756339200000') {
-                        $item['o'] = '0.3157';
-                        $item['c'] = '0.323';
-                        $item['h'] = '0.333';
-                        $item['l'] = '0.3157';
-                    }
-                    return $item;
-                })->values()->all();
-
-                $resp = collect($resp)->filter(function ($item) {
-                    $errorKline = in_array($item['tl'], [
-                        '1756392900000',
-                        '1756400100000',
-                        '1756364400000',
-                    ]);
-                    if ($errorKline) {
-                        return false;
-                    }
-                    return true;
-                })->values()->all();
-
-                return $resp;
-            }
-
-            $resp = collect($resp)->filter(function ($item) {
-                if ($item['tl'] <= 1756385100000) {
-                    return true;
-                }
-                if (isset($item['co'])) {
-                    return true;
-                }
-                return false;
-            })->values()->all();
-
-            $resp = collect($resp)->map(function($item){
-                if ($item['tl'] >= '1756445400000' && $item['tl'] <= '1756483920000') {
-                    $item['o'] = bcmul($item['o'],0.88,4);
-                    $item['c'] = bcmul($item['c'],0.88,4);
-                    $item['h'] = bcmul($item['h'],0.88,4);
-                    $item['l'] = bcmul($item['l'],0.88,4);
-                }
-                return $item;
-            });
-
-        }
         return $resp;
     }
 
