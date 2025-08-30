@@ -236,6 +236,18 @@ sql;
             return $resp;
         }
 
+        if ($binanceSymbol == 'ulxusdc') {
+            $resp = collect($resp)->filter(function ($item) {
+                if ($item['tl'] >= '1756579500000' ) {
+                    if (isset($item['s'])) {
+                        return false;
+                    }
+                }
+                return true;
+            })->values()->all();
+            return $resp;
+        }
+
         // 去除重复时间戳(刷数据问题)
         // if ($binanceSymbol == 'ulxusdc') {
         //     // 1756420200000
