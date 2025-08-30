@@ -29,8 +29,32 @@ class WithdrawCallback {
             if ($status == ThirdpartyEnums::UdunCallbacKStatusAuditDone) {
                 return true;
             }
-            Log::error('failed to handle user deposit , data incorrect : bad trade status',[
+
+            // 审核失败 , 退回款项
+            if ($status == ThirdpartyEnums::UdunCallbacKStatusAuditReject) {
+                Log::info('accpet UDun Reject withdraw',[
                     'data'=>$data,
+                ]);
+                Log::warning('failed to handle user deposit : UDun reject',[
+                    'data'=>$data,
+                ]);
+
+                $withdraw = UserWithdraw::where('order_no', $businessId)->first();
+                if (!$withdraw) {
+                    Log::error('failed to handle user withdraw , data incorrect : no found withdraw record',[
+                        'businessId'=>$businessId,
+                        'data'=>$data,
+                    ]);
+                    return true;
+                }
+                $refundSrv = new RefundWithdraw();
+                $refundSrv->rejectWithdrawByCallback($withdraw);
+                $refundSrv->refundMoney($withdraw);
+                return true;
+            }
+
+            Log::error('failed to handle user deposit , data incorrect : bad trade status',[
+                'data'=>$data,
             ]);
             return true;
         }
