@@ -769,7 +769,7 @@ class MarketController extends ApiController {
             'sigma'      => $sigma,
             'unit'       => $unit,
             'is_del'     => $isDel,
-            'scale'      => 5,
+            'scale'      => 8,
         ]);
         
         return $this->ok();
