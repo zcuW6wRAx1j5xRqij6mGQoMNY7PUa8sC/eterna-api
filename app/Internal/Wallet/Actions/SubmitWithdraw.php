@@ -54,6 +54,7 @@ class SubmitWithdraw
 
             // 提现手续费
             $fee = ConfigService::getIns()->fetch(ConfigEnums::PlatformConfigWithdrawFee, 0);
+            $realAmount = $amount;
             if ($fee) {
                 // 如果提现的是USDT/USDC , 直接扣除
                 if ($platform->coin_id == CoinEnums::DefaultUSDTCoinID) {
@@ -104,7 +105,7 @@ class SubmitWithdraw
             $withdraw->uid = $request->user()->id;
             $withdraw->receive_wallet_address = $walletAddr;
             $withdraw->amount = $amount;
-            $withdraw->real_amount = $amount;
+            $withdraw->real_amount = $realAmount;
             $withdraw->save();
 
             $flow = new UserWalletSpotFlow();
