@@ -18,7 +18,7 @@ class CreateKline extends Command
         {--source-key= : 自定义源 key（默认 symbol:src）}
     ';
     
-    protected $description = '从 Redis ZSET 的 1m 数据聚合生成 5m/15m/30m/1h/1d 等更大周期，写回 Redis ZSET。';
+    protected $description = '废弃，请使用 kline:new';
     
     public function handle(): int
     {
