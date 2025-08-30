@@ -97,6 +97,6 @@ class CommonEnums {
     const salesmanRoleIdCollect = [
         7,
     ];
-    const salesmanRoleId = 7;
-    const salesmanLeaderRoleId = 8;
+    const salesmanRoleId = 3;
+    const salesmanLeaderRoleId = 2;
 }

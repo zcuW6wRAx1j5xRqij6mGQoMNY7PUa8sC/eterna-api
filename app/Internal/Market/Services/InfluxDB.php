@@ -413,8 +413,9 @@ sql;
     // 示例使用
     // $min1Data = [ ... ]; // 你的1分钟数据数组
     // $min5 = aggregateKlines($min1Data, '5m');
-    function aggregateKlines($data, $interval)
+    function aggregateKlines($symbol, $interval)
     {
+        $data = $this->queryKline($symbol, '1m', '-y');
         if (empty($data)) {
             return [];
         }
