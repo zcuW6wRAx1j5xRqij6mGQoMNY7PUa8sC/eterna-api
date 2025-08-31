@@ -220,7 +220,7 @@ sql;
                 }
                 return true;
             })->values()->all();
-            return $resp;
+            // return $resp;
         }
         if ($binanceSymbol == 'syvusdc') {
             // 1756372200
@@ -232,7 +232,24 @@ sql;
                 }
                 return true;
             })->values()->all();
+            // return $resp;
+        }
 
+        if (in_array($binanceSymbol,['dsvusdc','iswusdc','nsyusdc','gpuusdc','syvusdc'])) {
+            $lastKline = null;
+            $resp = collect($resp)->map(function($item) use(&$lastKline){
+                if ($lastKline == null) {
+                    $lastKline = $item;
+                    return $item;
+                }
+                if ($item['o'] != $lastKline['c']) {
+                    $item['o'] = $lastKline['c'];
+                    $item['l'] = min($item['c'], $item['o'], $item['l'], $item['h']);
+                    $item['h'] = max($item['c'], $item['o'], $item['l'], $item['h']);
+                }
+                $lastKline = $item;
+                return $item;
+            });
             return $resp;
         }
 
