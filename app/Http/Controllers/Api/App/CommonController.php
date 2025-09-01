@@ -370,19 +370,51 @@ class CommonController extends ApiController {
      * @throws BindingResolutionException
      */
     public function leverages(Request $request) {
-        $collect = [
+        $rule = [
             //key是level_id, user_level.id/users.level_id
             1=>[25],//L0
             2=>[25, 50],//L1
             3=>[25, 50, 75],//L2
             4=>[25, 50, 75, 100],//L3
         ];
+
+        $allLeverage = [
+            '25'=>'1',
+            '50'=>'0',
+            '75'=>'0',
+            '100'=>'0',
+        ];
+
         if(!$request->user()){
-            return $this->ok($collect[1]);
+            return $this->ok($allLeverage);
+        }
+        $levelID = $request->user()->level_id;
+
+        $userLeverage = $rule[$levelID] ?? [];
+        if (!$userLeverage) {
+            return $this->ok($allLeverage);
         }
 
-        $levelID = $request->user()->level_id;
-        return $this->ok($collect[array_key_exists($levelID,$collect)?$levelID:1]);
+        foreach ($userLeverage as $l) {
+            $allLeverage[$l] = '1';
+        }
+        
+        return $this->ok($allLeverage);
+
+
+        // $collect = [
+        //     //key是level_id, user_level.id/users.level_id
+        //     1=>[25],//L0
+        //     2=>[25, 50],//L1
+        //     3=>[25, 50, 75],//L2
+        //     4=>[25, 50, 75, 100],//L3
+        // ];
+        // if(!$request->user()){
+        //     return $this->ok($collect[1]);
+        // }
+
+        // $levelID = $request->user()->level_id;
+        // return $this->ok($collect[array_key_exists($levelID,$collect)?$levelID:1]);
     }
 
     /**
