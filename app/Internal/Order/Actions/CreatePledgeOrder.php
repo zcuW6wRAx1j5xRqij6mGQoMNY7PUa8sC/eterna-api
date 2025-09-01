@@ -37,7 +37,7 @@ class CreatePledgeOrder
             ->whereIn('status', $unexpect)
             ->exists();
         if($onProcessing){
-            throw new LogicException(__('Only one order can be held simultaneously'));
+            throw new LogicException(__('OnNur ein Auftrag kann gleichzeitig bearbeitet werden.'));
         }
 
         return DB::transaction(function () use ($payload) {
