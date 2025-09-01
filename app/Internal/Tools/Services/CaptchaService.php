@@ -14,13 +14,13 @@ class CaptchaService {
     const DefaultSendInterval = 2 * 60;
 
     // 验证码有效期
-    const DefaultCaptchExpired = 5 * 60;
+    const DefaultCaptchExpired = 10 * 60;
 
     // 24小时内次数限制
     const DefaultCaptchaDayInterval = 24 * 60 * 60;
 
     // 每天最多3次
-    const SendDayLimit = 3;
+    const SendDayLimit = 4;
 
     // 验证码类型 : 注册
     const CaptchaTypeRegister = 'register';
