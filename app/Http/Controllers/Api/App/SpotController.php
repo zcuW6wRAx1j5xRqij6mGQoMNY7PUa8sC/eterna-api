@@ -119,7 +119,7 @@ class SpotController extends ApiController {
         $toCoinID   = $request->get('to_coin_id');
 
         // ULX 禁止闪兑
-        if ($fromCoinID == '55' || $toCoinID == '55') {
+        if ($fromCoinID == '543' || $toCoinID == '543') {
             throw new LogicException(__('The operation is unavailable at this time'));
         }
         
