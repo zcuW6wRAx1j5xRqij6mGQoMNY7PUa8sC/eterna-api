@@ -245,7 +245,7 @@ sql;
                 }
                 return true;
             })->values()->all();
-            return $resp;
+            // return $resp;
         }
 
          if (in_array($binanceSymbol,['dsvusdc','iswusdc','nsyusdc','gpuusdc','syvusdc','ulxusdc'])) {
