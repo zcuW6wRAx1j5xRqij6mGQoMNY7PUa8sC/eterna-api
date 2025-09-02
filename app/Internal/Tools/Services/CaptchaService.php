@@ -76,7 +76,7 @@ class CaptchaService {
         if ($accountType == CommonEnums::AccountTypeEmail) {
             Notification::route('mail',$account)->notify(new SendRegisterCaptcha($captcha));
         } else {
-            $phone = trim($account,'00');
+            $phone = ltrim($account,'00');
             Notification::route('phone',$phone)->notify(new SendRegisterPhoneCaptcha($captcha));
         }
 
