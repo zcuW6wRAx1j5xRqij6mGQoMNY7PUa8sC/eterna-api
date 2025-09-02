@@ -235,7 +235,7 @@ sql;
             // return $resp;
         }
 
-        if (in_array($binanceSymbol,['dsvusdc','iswusdc','nsyusdc','gpuusdc','syvusdc'])) {
+        if (in_array($binanceSymbol,['dsvusdc','iswusdc','nsyusdc','gpuusdc','syvusdc','ulxusdc'])) {
             $lastKline = null;
             $resp = collect($resp)->map(function($item) use(&$lastKline){
                 if ($lastKline == null) {
