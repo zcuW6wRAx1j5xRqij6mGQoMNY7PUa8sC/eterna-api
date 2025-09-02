@@ -855,17 +855,20 @@ class MarketController extends ApiController {
             ], $task);
             
             // 检测是否与机器人执行时间冲突
-            $newTaskStart = Carbon::parse($row['start_at'], config('app.timezone'));
-            $newTaskEndAt = Carbon::parse($row['end_at'], config('app.timezone'));
+            $newTaskStart = Carbon::parseFromLocale($row['start_at']);
+            $newTaskEndAt = Carbon::parseFromLocale($row['end_at']);
             $histories    = BotTask::query()
                                    ->where('symbol_id', $symbolInfo->id)
-                                   ->where('status', CommonEnums::Yes)
-                                   ->get();
-            foreach ($histories as $history) {
-                $start = Carbon::parse($history['start_at'], config('app.timezone'));
-                $end   = Carbon::parse($history['end_at'], config('app.timezone'));
-                if ($newTaskStart->between($start, $end) || $newTaskEndAt->between($start, $end)) {
-                    throw new LogicException('执行失败, 时间冲突');
+                                   ->where('end_at', '>', Carbon::now()->toDateTimeString())
+                                   ->get()
+                                   ->toArray();
+            if ($histories) {
+                foreach ($histories as $history) {
+                    $start = Carbon::parseFromLocale($history['start_at']);
+                    $end   = Carbon::parseFromLocale($history['end_at']);
+                    if ($newTaskStart->between($start, $end) || $newTaskEndAt->between($start, $end)) {
+                        throw new LogicException('执行失败, 时间冲突');
+                    }
                 }
             }
             
