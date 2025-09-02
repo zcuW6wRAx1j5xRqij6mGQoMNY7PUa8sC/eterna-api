@@ -106,7 +106,7 @@ class CreateInstantExchangeOrder
             }
 
             $fee             = ConfigService::getIns()->fetch(ConfigEnums::PlatformConfigInstantExchangeFee, 0.00);//手续费比率
-            $USDTAmount      = bcdiv($quantity, $originCoinMarketPrice, FundsEnums::DecimalPlaces);//源币->USDT
+            $USDTAmount      = bcmul($quantity, $originCoinMarketPrice, FundsEnums::DecimalPlaces);//源币->USDT
             $newTargetAmount = bcdiv($USDTAmount, $targetCoinMarketPrice, FundsEnums::DecimalPlaces);//USDT->目标币
             $fee             = bcmul($newTargetAmount, $fee, FundsEnums::DecimalPlaces);
             $newTargetAmount = bcsub($newTargetAmount, $fee, FundsEnums::DecimalPlaces); //扣除手续费
