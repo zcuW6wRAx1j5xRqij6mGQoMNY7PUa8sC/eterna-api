@@ -112,7 +112,7 @@ class SpotController extends ApiController {
         $request->validate([
             'from_coin_id' => 'required|integer|exists:symbol_coins,id',
             'to_coin_id'   => 'required|integer|exists:symbol_coins,id',
-            'quantity'     => 'required|numeric|min:0.0001',
+            'quantity'     => 'required|string',
         ]);
 
         $fromCoinID = $request->get('from_coin_id');
