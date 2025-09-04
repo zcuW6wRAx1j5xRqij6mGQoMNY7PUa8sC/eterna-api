@@ -106,7 +106,7 @@ class Kline {
             case IntervalEnums::Interval15Minutes:
                 return "-7d";
             case IntervalEnums::Interval30Minutes:
-                return "-3mo";
+                return "-1mo";
             case IntervalEnums::Interval1Hour:
                 return "-6mo";
             case IntervalEnums::Interval1Day:
