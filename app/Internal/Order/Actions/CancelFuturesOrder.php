@@ -45,7 +45,11 @@ class CancelFuturesOrder {
                 ]);
                 throw new LogicException(__('Whoops! Something went wrong'));
             }
-            $d = bcsub($wallet->lock_balance, $order->margin, FundsEnums::DecimalPlaces);
+            // 退换手续费
+            $fee = $order->open_fee ?? 0;
+            $allMargin = $order->margin;
+
+            $d = bcsub($wallet->lock_balance, $allMargin, FundsEnums::DecimalPlaces);
             if ($d < 0 ) {
                 Log::error('failed to cancel processing order : insufficient lock balance',[
                     'balance'=>$wallet->lock_balance,
@@ -56,7 +60,11 @@ class CancelFuturesOrder {
                 throw new LogicException(__('Whoops! Something went wrong'));
             }
             $before = $wallet->balance;
-            $wallet->balance = bcadd($wallet->balance, $order->margin,FundsEnums::DecimalPlaces);
+            if ($fee) {
+                $allMargin = bcadd($allMargin, $fee, FundsEnums::DecimalPlaces);
+            }
+
+            $wallet->balance = bcadd($wallet->balance, $allMargin,FundsEnums::DecimalPlaces);
             $wallet->lock_balance = $d;
             $wallet->save();
 
@@ -65,7 +73,7 @@ class CancelFuturesOrder {
             $flow->uid = $request->user()->id;
             $flow->flow_type = WalletFuturesFlowEnums::FlowTypeRefundPostingOrder;
             $flow->before_amount = $before;
-            $flow->amount = $order->margin;
+            $flow->amount = $allMargin;
             $flow->after_amount = $wallet->balance;
             $flow->relation_id = $order->id;
             $flow->save();
