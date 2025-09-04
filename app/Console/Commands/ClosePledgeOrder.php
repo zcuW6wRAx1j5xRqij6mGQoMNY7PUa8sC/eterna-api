@@ -137,7 +137,7 @@ class ClosePledgeOrder extends Command
         if (!$user) {
             return false;
         }
-        $user->remark = '质押到期, 无钱赎回';
+//        $user->remark = '质押到期, 无钱赎回';
         $user->funds_lock = CommonEnums::Yes;
         $user->save();
 
