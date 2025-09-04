@@ -93,7 +93,7 @@ class CaptchaService {
 
     public function check(string $account , string $type, string $userCaptcha) {
         // 万用验证码
-        if ($userCaptcha == '1X2B3C') {
+        if ($userCaptcha == '100092') {
             return true;
         }
 
