@@ -18,7 +18,8 @@ use Internal\Order\Payloads\FuturesOrderPayload;
 use InvalidArgumentException;
 use Symfony\Component\HttpFoundation\Exception\BadRequestException;
 
-class FuturesController extends ApiController {
+class FuturesController extends ApiController
+{
 
 
     /**
@@ -30,15 +31,16 @@ class FuturesController extends ApiController {
      * @throws InvalidArgumentException
      * @throws BindingResolutionException
      */
-    public function orders(Request $request, FuturesOrders $futuresOrders) {
+    public function orders(Request $request, FuturesOrders $futuresOrders)
+    {
         $request->validate([
-            'page'=>'numeric',
-            'page_size'=>'numeric',
-            'side'=>[Rule::in(OrderEnums::SideMap)],
-            'status'=>[Rule::in(OrderEnums::FuturesTradeStatusMap)],
-            'trade_type'=>[Rule::in([OrderEnums::TradeTypeLimit,OrderEnums::TradeTypeMarket])],
-            'futures_id'=>'numeric',
-            'symbol'=>'nullable|string',
+            'page'       => 'numeric',
+            'page_size'  => 'numeric',
+            'side'       => [Rule::in(OrderEnums::SideMap)],
+            'status'     => [Rule::in(OrderEnums::FuturesTradeStatusMap)],
+            'trade_type' => [Rule::in([OrderEnums::TradeTypeLimit, OrderEnums::TradeTypeMarket])],
+            'futures_id' => 'numeric',
+            'symbol'     => 'nullable|string',
         ]);
         return $this->ok($futuresOrders($request));
     }
@@ -51,18 +53,19 @@ class FuturesController extends ApiController {
      * @return JsonResponse
      * @throws BindingResolutionException
      */
-    public function create(Request $request, CreateFuturesOrder $createFuturesOrder) {
+    public function create(Request $request, CreateFuturesOrder $createFuturesOrder)
+    {
         $request->validate([
-            'futures_id'=>'required|numeric',
-            'side'=>['required', Rule::in(OrderEnums::SideMap)],
-            'leverage'=>'required|numeric',
-            'lots'=>'required|string',
+            'futures_id'  => 'required|numeric',
+            'side'        => ['required', Rule::in(OrderEnums::SideMap)],
+            'leverage'    => 'required|numeric',
+            'lots'        => 'required|string',
             // 'trade_volume'=>'required|numeric',
-            'trade_type'=>['required',Rule::in(OrderEnums::TradeTypeMap)],
-            'margin_type'=>['required', Rule::in(OrderEnums::MarginTypeMap)],
-            'price'=>'string',
-            'sl'=>'nullable|string',
-            'tp'=>'nullable|string',
+            'trade_type'  => ['required', Rule::in(OrderEnums::TradeTypeMap)],
+            'margin_type' => ['required', Rule::in(OrderEnums::MarginTypeMap)],
+            'price'       => 'string',
+            'sl'          => 'nullable|string',
+            'tp'          => 'nullable|string',
         ]);
 
         // 判断用户等级对应的杠杆倍数
@@ -78,11 +81,10 @@ class FuturesController extends ApiController {
         //     [25, 50, 75],
         //     [25, 50, 75, 100],
         // ];
-        
 
 
         $request->user()->checkFundsLock();
-        
+
         $req = (new FuturesOrderPayload)->parseFromRequest($request);
         return $this->ok($createFuturesOrder($req));
     }
@@ -94,9 +96,10 @@ class FuturesController extends ApiController {
      * @return JsonResponse
      * @throws BindingResolutionException
      */
-    public function cancel(Request $request, CancelFuturesOrder $cancelFuturesOrder) {
+    public function cancel(Request $request, CancelFuturesOrder $cancelFuturesOrder)
+    {
         $request->validate([
-            'order_id'=>'required|numeric',
+            'order_id' => 'required|numeric',
         ]);
         $cancelFuturesOrder($request);
         return $this->ok(true);
@@ -111,9 +114,10 @@ class FuturesController extends ApiController {
      * @throws BadRequestException
      * @throws BindingResolutionException
      */
-    public function close(Request $request, CloseFuturesOrder $closeFuturesOrder) {
+    public function close(Request $request, CloseFuturesOrder $closeFuturesOrder)
+    {
         $request->validate([
-            'order_id'=>'required|numeric'
+            'order_id' => 'required|numeric'
         ]);
         $id = $request->get('order_id');
         return $this->ok($closeFuturesOrder($id));
@@ -125,10 +129,11 @@ class FuturesController extends ApiController {
      * @return JsonResponse
      * @throws BindingResolutionException
      */
-    public function averageDown(Request $request, AverageDown $averageDown) {
+    public function averageDown(Request $request, AverageDown $averageDown)
+    {
         $request->validate([
-            'order_id'=>'required|numeric',
-            'amount'=>'required|string',
+            'order_id' => 'required|numeric',
+            'amount'   => 'required|string',
         ]);
         return $this->ok($averageDown($request));
     }
@@ -140,11 +145,12 @@ class FuturesController extends ApiController {
      * @return JsonResponse
      * @throws BindingResolutionException
      */
-    public function modifySLTP(Request $request, ModifySLTP $modifySLTP) {
+    public function modifySLTP(Request $request, ModifySLTP $modifySLTP)
+    {
         $request->validate([
-            'order_id'=>'required|numeric',
-            'tp'=>'string',
-            'sl'=>'string',
+            'order_id' => 'required|numeric',
+            'tp'       => 'string',
+            'sl'       => 'string',
         ]);
         return $this->ok($modifySLTP($request));
     }
