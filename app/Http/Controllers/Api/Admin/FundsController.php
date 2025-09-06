@@ -41,7 +41,7 @@ class FundsController extends ApiController {
         $request->validate([
             'to'=>['required', Rule::in([TransferEnums::WalletDerivative,TransferEnums::WalletSpot])],
             'uid'=>'required|numeric',
-            'amount'=>'required|numeric',
+            'amount'=>'required|string',
         ]);
 
         $user = User::findOrFail($request->get('uid'));
