@@ -32,9 +32,10 @@ class CreatePledgeOrder
             OrderEnums::PledgeTradeStatusPending,
             OrderEnums::PledgeTradeStatusHold,
             OrderEnums::PledgeTradeStatusClosing,
+            OrderEnums::PledgeTradeStatusRejected,
         ];
         $onProcessing = UserOrderPledge::where('uid', $payload->user->id)
-            ->whereIn('status', $unexpect)
+            ->where('status', '<>', OrderEnums::PledgeTradeStatusRejected)
             ->exists();
         if($onProcessing){
             throw new LogicException(__('OnNur ein Auftrag kann gleichzeitig bearbeitet werden.'));

@@ -5,6 +5,8 @@ namespace App\Http\Resources;
 use App\Enums\CoinEnums;
 use App\Enums\CommonEnums;
 use App\Enums\FundsEnums;
+use App\Enums\OrderEnums;
+use App\Exceptions\LogicException;
 use App\Models\PlatformActiveSupport;
 use App\Models\UserInbox;
 use App\Models\UserOrderPledge;
@@ -41,7 +43,7 @@ class UserResource extends JsonResource
 
         $onPledge = UserOrderPledge::query()
             ->where('uid', $this->id)
-            ->whereNotIn('status', ['rejected', 'closed'])
+            ->where('status', '<>', OrderEnums::PledgeTradeStatusRejected)
             ->exists();
 
         return [
