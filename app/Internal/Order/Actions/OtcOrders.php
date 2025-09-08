@@ -14,7 +14,7 @@ class OtcOrders {
     {
         $uid    = $request->user()->id;
         $status = $request->get('status','');
-        $query  = OtcOrder::select('id','uid','product_id','quantity','amount','price','status','created_at','payment_method', 'trade_type')
+        $query  = OtcOrder::select('id','uid','product_id','quantity','amount','buy_price','sell_price','status','created_at','payment_method', 'trade_type')
             ->with(['product'])->where('uid', $uid);
         if ($status) {
             $query->where('status', $status);
