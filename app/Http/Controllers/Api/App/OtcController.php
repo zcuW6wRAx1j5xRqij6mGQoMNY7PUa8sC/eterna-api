@@ -28,7 +28,7 @@ class OtcController extends ApiController
     {
         $products = OtcProduct::query()->with(['symbolCoin'])
             ->where('status', OrderEnums::StatusNormal)
-            ->orderByDesc('created_at')->get();
+            ->orderBy('created_at')->get();
 
         foreach ($products as $product) {
             $product['payment_method'] = ['SEPA-Überweisung'];
