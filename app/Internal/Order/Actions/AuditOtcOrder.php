@@ -47,7 +47,7 @@ class AuditOtcOrder
                 $product->save();
             }
             if ($order->trade_type == OrderEnums::TradeTypeBuy) {
-                $order->buy_audit_at = $request->user()->id;
+                $order->buy_auditor  = $request->user()->id;
                 $order->buy_audit_at = carbon::now()->toDateTimeString();
             }
 
