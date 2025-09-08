@@ -64,7 +64,7 @@ class AuthController extends ApiController {
             }
             $user = User::where('email', $email)->first();
         } else{
-            if (!$phone ||!$phoneCode) {
+            if (!$phone || !$phoneCode) {
                 throw new LogicException(__('Incorrect username or password'));
             }
             $user = User::where('phone_code', $phoneCode)->where('phone', $phone)->first();
