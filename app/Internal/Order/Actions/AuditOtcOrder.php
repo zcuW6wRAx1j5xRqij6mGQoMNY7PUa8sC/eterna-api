@@ -27,29 +27,36 @@ class AuditOtcOrder
             $id     = $request->get('id');
             $status = $request->get('status');
             $order  = OtcOrder::find($id);
-            if(!$order){
+            if (!$order) {
                 throw new InvalidArgumentException(__('Order not found'));
             }
 
             $product = OtcProduct::where('id', $order->product_id)->lockForUpdate()->first();
-            if(!$product){
+            if (!$product) {
                 throw new InvalidArgumentException(__('Product not found'));
             }
 
-            if($order->status != OrderEnums::TradeStatusPending){
+            if ($order->status != OrderEnums::TradeStatusPending) {
                 throw new LogicException(__('Trade status is not pending'));
             }
 
-            if($status == OrderEnums::TradeStatusAccepted) {
+            if ($status == OrderEnums::TradeStatusAccepted) {
                 $product->total_count++;//成单数量
 //                $product->success_rate = 99;//成单率
                 $product->total_amount += $order->amount;
                 $product->save();
             }
+            if ($order->trade_type == OrderEnums::TradeTypeBuy) {
+                $order->buy_audit_at = $request->user()->id;
+                $order->buy_audit_at = carbon::now()->toDateTimeString();
+            }
 
-            $order->auditor     = $request->user()->id;
-            $order->audit_at    = carbon::now()->toDateTimeString();
-            $order->status      = $status;
+            if ($order->trade_type == OrderEnums::TradeTypeSell) {
+                $order->sell_auditor  = $request->user()->id;
+                $order->sell_audit_at = carbon::now()->toDateTimeString();
+            }
+
+            $order->status = $status;
             $order->save();
 
             return true;
