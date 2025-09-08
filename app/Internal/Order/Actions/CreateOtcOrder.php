@@ -47,7 +47,11 @@ class CreateOtcOrder
             $order->payment_method  = $paymentMethod;
             $order->trade_type      = $tradeType;
             $order->comments        = (string)$comments;
-            $order->price           = $price;
+            if ($tradeType == OrderEnums::TradeTypeBuy) {
+                $order->buy_price = $price;
+            } else {
+                $order->sell_price = $price;
+            }
             $order->status          = OrderEnums::TradeStatusPending;
             $order->save();
 
