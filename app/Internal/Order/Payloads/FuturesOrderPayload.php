@@ -96,16 +96,6 @@ class FuturesOrderPayload
             // 获取最新市价
             $this->marketPrice = (new FetchSymbolFuturesQuote)($symbol->symbol);
             if (!$this->marketPrice) {
-                if (str_contains($symbol->symbol, 'usdc')) {
-                    $newSymbol         = str_replace('usdc', 'usdt', $symbol->symbol);
-                    $this->marketPrice = (new FetchSymbolFuturesQuote)($newSymbol);
-                }
-                if (str_contains($symbol->symbol, 'usdt')) {
-                    $newSymbol         = str_replace('usdt', 'usdc', $symbol->symbol);
-                    $this->marketPrice = (new FetchSymbolFuturesQuote)($newSymbol);
-                }
-            }
-            if (!$this->marketPrice) {
                 Log::error('failed to create futures order : no quote', [
                     'symbolId' => $symbol->id,
                     'symbol'   => $symbol->symbol,

@@ -6,18 +6,39 @@ use App\Enums\CommonEnums;
 use App\Enums\MarketEnums;
 use App\Models\Symbol;
 
-class FetchSymbolFuturesQuote {
+class FetchSymbolFuturesQuote
+{
 
     public function __invoke(string $symbol)
     {
-        return RedisMarket()->get(sprintf(MarketEnums::SpotSymbolQuoteCacheKey, strtolower($symbol)));
+        $symbol = strtolower($symbol);
+        $value  = RedisMarket()->get(sprintf(MarketEnums::SpotSymbolQuoteCacheKey, $symbol));
+        if ($value) {
+            return $value;
+        }
+
+        $newSymbol = '';
+        if (str_contains($symbol, 'usdc')) {
+            $newSymbol = str_replace('usdc', 'usdt', $symbol);
+        }
+
+        if (str_contains($symbol, 'usdt')) {
+            $newSymbol = str_replace('usdt', 'usdc', $symbol);
+        }
+
+        if ($newSymbol == '') {
+            return 0;
+        }
+
+        return RedisMarket()->get(sprintf(MarketEnums::SpotSymbolQuoteCacheKey, $newSymbol));
     }
 
     // 获取所有报价
-    public function getAllSymbol() {
+    public function getAllSymbol()
+    {
         $keys = [];
-        Symbol::where('status', CommonEnums::Yes)->get()->each(function($item) use(&$keys){
-            array_push($keys , strtolower($item->binance_symbol));
+        Symbol::where('status', CommonEnums::Yes)->get()->each(function ($item) use (&$keys) {
+            array_push($keys, strtolower($item->binance_symbol));
             return true;
         });
 
@@ -25,8 +46,8 @@ class FetchSymbolFuturesQuote {
             return [];
         }
 
-        $redis = RedisMarket();
-        $data = $redis->pipeline(function($pipe) use($keys){
+        $redis        = RedisMarket();
+        $data         = $redis->pipeline(function ($pipe) use ($keys) {
             foreach ($keys as $key) {
                 $pipe->get(sprintf(MarketEnums::SpotSymbolQuoteCacheKey, $key));
             }
