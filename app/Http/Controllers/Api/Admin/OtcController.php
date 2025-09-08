@@ -87,27 +87,33 @@ class OtcController extends ApiController {
     public function update(Request $request)
     {
         $request->validate([
-            'id'         => 'required|numeric',
-            'title'      => 'required|string',
-            'min_limit'  => 'required|numeric',
-            'max_limit'  => 'required|numeric',
-            'buy_price'  => 'required|numeric',
-            'sell_price' => 'required|numeric',
+            'id'             => 'required|numeric',
+            'title'          => 'required|string',
+            'min_limit'      => 'required|numeric',
+            'max_limit'      => 'required|numeric',
+            'sell_min_limit' => 'required|numeric',
+            'sell_max_limit' => 'required|numeric',
+            'buy_price'      => 'required|numeric',
+            'sell_price'     => 'required|numeric',
         ]);
         
-        $id        = $request->get('id');
-        $title     = $request->get('title');
-        $minLimit  = $request->get('min_limit');
-        $maxLimit  = $request->get('max_limit');
-        $buyPrice  = $request->get('buy_price');
-        $sellPrice = $request->get('sell_price');
+        $id           = $request->get('id');
+        $title        = $request->get('title');
+        $minLimit     = $request->get('min_limit');
+        $maxLimit     = $request->get('max_limit');
+        $sellMinLimit = $request->get('sell_min_limit');
+        $sellMaxLimit = $request->get('sell_max_limit');
+        $buyPrice     = $request->get('buy_price');
+        $sellPrice    = $request->get('sell_price');
         
-        $config             = OtcProduct::find($id);
-        $config->title      = $title;
-        $config->min_limit  = $minLimit;
-        $config->max_limit  = $maxLimit;
-        $config->buy_price  = $buyPrice;
-        $config->sell_price = $sellPrice;
+        $config                 = OtcProduct::find($id);
+        $config->title          = $title;
+        $config->min_limit      = $minLimit;
+        $config->max_limit      = $maxLimit;
+        $config->sell_min_limit = $sellMinLimit;
+        $config->sell_max_limit = $sellMaxLimit;
+        $config->buy_price      = $buyPrice;
+        $config->sell_price     = $sellPrice;
         $config->save();
         
         return $this->ok($config);
