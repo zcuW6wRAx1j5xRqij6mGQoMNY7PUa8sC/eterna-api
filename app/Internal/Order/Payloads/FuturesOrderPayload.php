@@ -17,7 +17,8 @@ use Internal\Common\Services\ConfigService;
 use Internal\Market\Actions\FetchSymbolFuturesQuote;
 use Internal\Market\Services\BinanceService;
 
-class FuturesOrderPayload {
+class FuturesOrderPayload
+{
     public User $user;
     // 合约ID
     public int $futuresId;
@@ -45,7 +46,7 @@ class FuturesOrderPayload {
     public $tradeVolume;
     // 保证金
     public $margin;
-    // 手续费 
+    // 手续费
     public $fee;
     // 止损
     public $sl;
@@ -57,25 +58,25 @@ class FuturesOrderPayload {
 
     public function parseFromRequest(Request $request)
     {
-        $this->side = $request->get('side');
-        $this->price = parseNumber($request->get('price',0));
-        $this->tradeType = $request->get('trade_type');
+        $this->side       = $request->get('side');
+        $this->price      = parseNumber($request->get('price', 0));
+        $this->tradeType  = $request->get('trade_type');
         $this->marginType = $request->get('margin_type');
-        $this->leverage = $request->get('leverage');
-        $this->lots = parseNumber($request->get('lots',0));
-        $this->futuresId = $request->get('futures_id');
-        $this->sl = parseNumber($request->get('sl',0));
-        $this->tp = parseNumber($request->get('tp',0));
-        $this->user = $request->user();
+        $this->leverage   = $request->get('leverage');
+        $this->lots       = parseNumber($request->get('lots', 0));
+        $this->futuresId  = $request->get('futures_id');
+        $this->sl         = parseNumber($request->get('sl', 0));
+        $this->tp         = parseNumber($request->get('tp', 0));
+        $this->user       = $request->user();
 
         if ($this->lots <= 0) {
             throw new LogicException(__('Incorrect trade volume'));
         }
 
-        $this->margin = bcmul($this->lots, OrderEnums::DefaultLotsTradevalue, FundsEnums::DecimalPlaces);
+        $this->margin      = bcmul($this->lots, OrderEnums::DefaultLotsTradevalue, FundsEnums::DecimalPlaces);
         $this->tradeVolume = bcmul($this->margin, $this->leverage, FundsEnums::DecimalPlaces);
 
-        $futures =  SymbolFutures::find($this->futuresId);
+        $futures = SymbolFutures::find($this->futuresId);
         if (!$futures) {
             throw new LogicException(__('Whoops! Something went wrong'));
         }
@@ -95,8 +96,19 @@ class FuturesOrderPayload {
             // 获取最新市价
             $this->marketPrice = (new FetchSymbolFuturesQuote)($symbol->symbol);
             if (!$this->marketPrice) {
-                Log::error('failed to create spot order : no quote',[
-                    'symbolId'=>$symbol->id,
+                if (str_contains($symbol->symbol, 'usdc')) {
+                    $newSymbol         = str_replace('usdc', 'usdt', $symbol->symbol);
+                    $this->marketPrice = (new FetchSymbolFuturesQuote)($newSymbol);
+                }
+                if (str_contains($symbol->symbol, 'usdt')) {
+                    $newSymbol         = str_replace('usdt', 'usdc', $symbol->symbol);
+                    $this->marketPrice = (new FetchSymbolFuturesQuote)($newSymbol);
+                }
+            }
+            if (!$this->marketPrice) {
+                Log::error('failed to create futures order : no quote', [
+                    'symbolId' => $symbol->id,
+                    'symbol'   => $symbol->symbol,
                 ]);
                 throw new LogicException(__('Whoops! Something went wrong'));
             }
@@ -106,22 +118,22 @@ class FuturesOrderPayload {
         // 扣去交易手续费
         $fee = ConfigService::getIns()->fetch(ConfigEnums::PlatformConfigFuturesOpenFee, 0);
         if ($fee) {
-            $fee = bcdiv($fee, 100, FundsEnums::DecimalPlaces);
+            $fee       = bcdiv($fee, 100, FundsEnums::DecimalPlaces);
             $this->fee = bcmul($this->tradeVolume, $fee, FundsEnums::DecimalPlaces);
         }
 
         $this->SymbolFutures = $futures;
-        $this->symbol = $symbol;
+        $this->symbol        = $symbol;
 
-         // 2024/11/17 没有点差
-         // 收取手续费
+        // 2024/11/17 没有点差
+        // 收取手续费
         // $this->spread = $this->SymbolFutures->buy_spread;
         // $this->matchPrice = $this->spread ? bcadd($this->marketPrice, $this->spread, FundsEnums::DecimalPlaces) : $this->marketPrice;
 
 
         // if ($this->side == OrderEnums::SideSell) {
         //     $this->spread = $this->SymbolFutures->sell_spread;
-        //     $this->matchPrice = $this->spread ? bcsub($this->marketPrice, $this->spread, FundsEnums::DecimalPlaces) : $this->marketPrice; 
+        //     $this->matchPrice = $this->spread ? bcsub($this->marketPrice, $this->spread, FundsEnums::DecimalPlaces) : $this->marketPrice;
         // }
 
         $this->matchPrice = $this->marketPrice;
@@ -129,7 +141,8 @@ class FuturesOrderPayload {
     }
 
 
-    public function parseFromOrder(UserOrderSpot $order) {
+    public function parseFromOrder(UserOrderSpot $order)
+    {
         return $this;
     }
 }
