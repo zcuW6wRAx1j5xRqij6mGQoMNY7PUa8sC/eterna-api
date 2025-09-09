@@ -10,16 +10,19 @@ use App\Models\UserWalletSpot;
 
 class SpotWallet {
     
-    public function __invoke(User $user)
+    public function __invoke(User $user, int $isOtc = 0)
     {
         (new UpdateSpotWalletUsdt)($user);
-        $coins       = UserWalletSpot::with(['coin'])->where('uid', $user->id)->get();
-        $alias       = 'user_wallet_spot.';
-        $totalAssets = UserWalletSpot::query()
-                                     ->leftJoin('symbol_coins as sc', 'sc.id', '=', $alias . 'coin_id')
-                                     ->where($alias . 'uid', $user->id)
-                                     ->whereNot('sc.block', CoinEnums::COIN_ULX)
-                                     ->sum($alias . 'usdt_value');
+        $coins = UserWalletSpot::with(['coin'])->where('uid', $user->id)->get();
+        $alias = 'user_wallet_spot.';
+        $query = UserWalletSpot::query()
+                               ->leftJoin('symbol_coins as sc', 'sc.id', '=', $alias . 'coin_id')
+                               ->where($alias . 'uid', $user->id);
+        if ($isOtc) {
+            $query->whereNot('sc.block', CoinEnums::COIN_ULX);
+        }
+        
+        $totalAssets = $query->sum($alias . 'usdt_value');
         $usdtWallet  = UserWalletSpot::query()
                                      ->where('uid', $user->id)
                                      ->where('coin_id', CoinEnums::DefaultUSDTCoinID)
