@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\App;
 
+use App\Models\User;
 use App\Enums\OrderEnums;
 use App\Http\Controllers\Api\ApiController;
 use Illuminate\Http\JsonResponse;
@@ -18,14 +19,15 @@ use Internal\Order\Payloads\FuturesOrderPayload;
 use InvalidArgumentException;
 use Symfony\Component\HttpFoundation\Exception\BadRequestException;
 
-class FuturesController extends ApiController
-{
-
-
+class FuturesController extends ApiController {
+    
+    
     /**
      * 合约订单
-     * @param Request $request
+     *
+     * @param Request       $request
      * @param FuturesOrders $futuresOrders
+     *
      * @return JsonResponse
      * @throws BadRequestException
      * @throws InvalidArgumentException
@@ -44,12 +46,14 @@ class FuturesController extends ApiController
         ]);
         return $this->ok($futuresOrders($request));
     }
-
-
+    
+    
     /**
      * 建仓
-     * @param Request $request
+     *
+     * @param Request            $request
      * @param CreateFuturesOrder $createFuturesOrder
+     *
      * @return JsonResponse
      * @throws BindingResolutionException
      */
@@ -67,32 +71,40 @@ class FuturesController extends ApiController
             'sl'          => 'nullable|string',
             'tp'          => 'nullable|string',
         ]);
-
+        
+        $user = User::query()->find($request->user()->id);
+        
+        if ($user->level_id == 1) {
+            return $this->fail(__('Deckung unzureichend'));
+        }
+        
         // 判断用户等级对应的杠杆倍数
         // to
         // $levelID = $request->user()->level_id;
         // if (intval($levelID) === 1) {
         //     $levelID = 0;
         // }
-
+        
         // $collect = [
         //     [25],
         //     [25, 50],
         //     [25, 50, 75],
         //     [25, 50, 75, 100],
         // ];
-
-
+        
+        
         $request->user()->checkFundsLock();
-
+        
         $req = (new FuturesOrderPayload)->parseFromRequest($request);
         return $this->ok($createFuturesOrder($req));
     }
-
+    
     /**
      * 取消挂单
-     * @param Request $request
+     *
+     * @param Request            $request
      * @param CancelFuturesOrder $cancelFuturesOrder
+     *
      * @return JsonResponse
      * @throws BindingResolutionException
      */
@@ -104,12 +116,14 @@ class FuturesController extends ApiController
         $cancelFuturesOrder($request);
         return $this->ok(true);
     }
-
-
+    
+    
     /**
      * 平仓
-     * @param Request $request
+     *
+     * @param Request           $request
      * @param CloseFuturesOrder $closeFuturesOrder
+     *
      * @return JsonResponse
      * @throws BadRequestException
      * @throws BindingResolutionException
@@ -117,15 +131,17 @@ class FuturesController extends ApiController
     public function close(Request $request, CloseFuturesOrder $closeFuturesOrder)
     {
         $request->validate([
-            'order_id' => 'required|numeric'
+            'order_id' => 'required|numeric',
         ]);
         $id = $request->get('order_id');
         return $this->ok($closeFuturesOrder($id));
     }
-
+    
     /**
      * 补仓
+     *
      * @param Request $request
+     *
      * @return JsonResponse
      * @throws BindingResolutionException
      */
@@ -137,11 +153,13 @@ class FuturesController extends ApiController
         ]);
         return $this->ok($averageDown($request));
     }
-
+    
     /**
      * 修改订单SL & TP
-     * @param Request $request
+     *
+     * @param Request    $request
      * @param ModifySLTP $modifySLTP
+     *
      * @return JsonResponse
      * @throws BindingResolutionException
      */
