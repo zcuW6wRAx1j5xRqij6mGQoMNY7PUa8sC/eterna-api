@@ -74,7 +74,7 @@ class FuturesController extends ApiController {
         
         $user = User::query()->find($request->user()->id);
         
-        if ($user->level_id <= 1) {
+        if ($user->level_id <= 1 && $request->side == OrderEnums::SideSell) {
             return $this->fail(__('Deckung unzureichend'));
         }
         
