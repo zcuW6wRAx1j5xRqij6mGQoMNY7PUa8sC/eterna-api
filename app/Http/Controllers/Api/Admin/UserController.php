@@ -197,9 +197,6 @@ class UserController extends ApiController
         ]);
 
         $salesman   = $request->get('salesman',0);
-        if(!$salesman){
-            $salesman == $request->user()->id;
-        }
         if($salesman && $salesman != $request->user()->id && !AdminUser::find($salesman)){
             throw new LogicException(__('业务员ID不存在'));
         }
