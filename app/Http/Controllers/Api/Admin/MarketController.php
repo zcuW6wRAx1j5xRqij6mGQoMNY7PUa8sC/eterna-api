@@ -855,22 +855,28 @@ class MarketController extends ApiController {
             ], $task);
             
             // 检测是否与机器人执行时间冲突
-            $newTaskStart = Carbon::parseFromLocale($row['start_at']);
-            $newTaskEndAt = Carbon::parseFromLocale($row['end_at']);
-            $histories    = BotTask::query()
-                                   ->where('symbol_id', $symbolInfo->id)
-                                   ->where('end_at', '>', Carbon::now()->toDateTimeString())
-                                   ->get()
-                                   ->toArray();
-            if ($histories) {
-                foreach ($histories as $history) {
-                    $start = Carbon::parseFromLocale($history['start_at']);
-                    $end   = Carbon::parseFromLocale($history['end_at']);
-                    if ($newTaskStart->between($start, $end) || $newTaskEndAt->between($start, $end)) {
-                        throw new LogicException('执行失败, 时间冲突');
-                    }
+            $lastTask = BotTask::query()->where('symbol_id', $symbolInfo->id)->orderByDesc('end_at')->first();
+            if ($lastTask) {
+                if ($row['start_at'] <= $lastTask->end_at) {
+                    throw new LogicException('执行失败, 时间冲突, 请尝试删除未开始的任务');
                 }
             }
+//            $newTaskStart = Carbon::parseFromLocale($row['start_at']);
+//            $newTaskEndAt = Carbon::parseFromLocale($row['end_at']);
+//            $histories    = BotTask::query()
+//                                   ->where('symbol_id', $symbolInfo->id)
+//                                   ->where('end_at', '>', Carbon::now()->toDateTimeString())
+//                                   ->get()
+//                                   ->toArray();
+//            if ($histories) {
+//                foreach ($histories as $history) {
+//                    $start = Carbon::parseFromLocale($history['start_at']);
+//                    $end   = Carbon::parseFromLocale($history['end_at']);
+//                    if ($newTaskStart->between($start, $end) || $newTaskEndAt->between($start, $end)) {
+//                        throw new LogicException('执行失败, 时间冲突');
+//                    }
+//                }
+//            }
             
             // 尝试保存机器人任务，如果失败则回滚事务并记录日志
             $task = BotTask::create($row);
