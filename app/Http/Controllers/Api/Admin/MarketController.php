@@ -856,15 +856,16 @@ class MarketController extends ApiController {
             
             // 检测是否与机器人执行时间冲突
             $lastTask = BotTask::query()->where('symbol_id', $symbolInfo->id)->orderByDesc('end_at')->first();
-            // if ($lastTask) {
-            //     if ($row['start_at'] <= $lastTask->end_at) {
-            //         Log::info('执行失败, 时间冲突',[
-            //             'row'=>$row,
-            //             'lastTask'=>$lastTask->toArray()
-            //         ]);
-            //         throw new LogicException('执行失败, 时间冲突, 请尝试删除未开始的任务');
-            //     }
-            // }
+            if ($lastTask) {
+                $lastTaskTime = Carbon::parse($lastTask->end_at, 'UTC')->setTimezone(config('app.timezone'))->toDateTimeString();
+                if ($row['start_at'] <= $lastTaskTime) {
+                    Log::info('执行失败, 时间冲突',[
+                        'row'=>$row,
+                        'lastTask'=>$lastTask->toArray()
+                    ]);
+                    throw new LogicException('执行失败, 时间冲突, 请尝试删除未开始的任务');
+                }
+            }
 //            $newTaskStart = Carbon::parseFromLocale($row['start_at']);
 //            $newTaskEndAt = Carbon::parseFromLocale($row['end_at']);
 //            $histories    = BotTask::query()
