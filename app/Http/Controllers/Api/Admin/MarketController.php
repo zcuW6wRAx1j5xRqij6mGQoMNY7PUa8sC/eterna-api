@@ -858,6 +858,10 @@ class MarketController extends ApiController {
             $lastTask = BotTask::query()->where('symbol_id', $symbolInfo->id)->orderByDesc('end_at')->first();
             if ($lastTask) {
                 if ($row['start_at'] <= $lastTask->end_at) {
+                    Log::info('执行失败, 时间冲突',[
+                        'row'=>$row,
+                        'lastTask'=>$lastTask->toArray()
+                    ]);
                     throw new LogicException('执行失败, 时间冲突, 请尝试删除未开始的任务');
                 }
             }
