@@ -29,7 +29,7 @@ class ChangeUserWalletAddress extends Command
     public function handle()
     {
         $uids = [
-            8089335
+            8089950
         ];
 
         collect($uids)->each(function($uid){
