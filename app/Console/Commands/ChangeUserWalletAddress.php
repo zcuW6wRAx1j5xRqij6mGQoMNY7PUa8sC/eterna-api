@@ -29,16 +29,18 @@ class ChangeUserWalletAddress extends Command
     public function handle()
     {
         $uids = [
-            8089950
+            8089950,
         ];
 
-        collect($uids)->each(function($uid){
+        collect($uids)->each(function ($uid) {
             UserWalletAddress::where('uid', $uid)->delete();
             $user = User::find($uid);
             (new InitUserWallet)($user);
-            $this->info($uid .' : done');
+            $this->info($uid.' : done');
+
             return true;
         });
+
         return $this->info('all done');
     }
 }
