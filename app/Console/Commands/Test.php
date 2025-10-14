@@ -39,19 +39,39 @@ class Test extends Command {
      * @var string
      */
     protected $signature = 'app:test';
-    
+
     /**
      * The console command description.
      *
      * @var string
      */
     protected $description = '代码测试';
-    
+
     /**
      * Execute the console command.
      */
     public function handle(): void
     {
+
+        $symbols = \App\Models\Symbol::query()
+            ->where('self_data', 1)
+            ->where('status', \App\Enums\CommonEnums::Yes)->get();
+        if ($symbols->isEmpty()) {
+            echo '没有找到合约交易对' . PHP_EOL;
+            return ;
+        }
+
+        foreach ($symbols as $item) {
+            $kline = (new InfluxDB(MarketEnums::SpotInfluxdbBucket))->queryKline($item->binance_symbol,'1M', '-66d');
+            if(!$kline){continue;}
+            $kline = [(array)$kline[0]];
+            (new InfluxDB('market_spot'))->writeData($item->binance_symbol, '1mo', $kline);
+        }
+        return ;
+
+
+
+
         $open       = 0.10064;
         $targetHigh = 0.60386;
         $targetLow  = 0.08395;

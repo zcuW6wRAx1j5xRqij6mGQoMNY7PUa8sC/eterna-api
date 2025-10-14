@@ -235,7 +235,7 @@ sql;
             // return $resp;
         }
 
-       
+
         if ($binanceSymbol == 'ulxusdc') {
             $resp = collect($resp)->filter(function ($item) {
                 if ($item['tl'] >= '1756579500000' ) {

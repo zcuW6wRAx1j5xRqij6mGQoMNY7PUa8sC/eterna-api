@@ -6,6 +6,7 @@ use App\Enums\CommonEnums;
 use App\Enums\IntervalEnums;
 use App\Enums\MarketEnums;
 use App\Enums\SymbolEnums;
+use App\Exceptions\LogicException;
 use App\Models\Symbol;
 use App\Models\SymbolFutures;
 use App\Models\SymbolSpot;
@@ -117,6 +118,42 @@ class Kline {
             case IntervalEnums::SpecialInterval1Month:
                 return "-10y";
         }
-
     }
+
+    public function modify(Request $request)
+    {
+        $symbolType = $request->get('symbol_type');
+        $interval   = $request->get('interval');
+        $symbolId   = $request->get('symbol_id');
+        $data       = (string)$request->get('data');
+
+        if ($interval == IntervalEnums::Interval1Month) {
+            $interval = IntervalEnums::SpecialInterval1Month;
+        }
+
+        $bucket = MarketEnums::SpotInfluxdbBucket;
+
+        if ($symbolType == SymbolEnums::SymbolTypeSpot) {
+            $symbol = SymbolSpot::find($symbolId);
+        } else {
+            $symbol = SymbolFutures::find($symbolId);
+        }
+        if (!$symbol) {
+            return [];
+        }
+        $symbol = $symbol->symbol->binance_symbol;
+
+        try {
+            $kline = json_decode($data, true);
+        } catch (\Exception $e) {
+            Log::error('modify kline error when decode json data: '.$e->getMessage());
+            throw new LogicException(__('解析data出错，非标准json结构体:' . $data));
+        }
+
+
+        // 覆盖写入
+        return (new InfluxDB($bucket))->writeData($symbol, $interval, [$kline]);
+    }
+
+
 }
