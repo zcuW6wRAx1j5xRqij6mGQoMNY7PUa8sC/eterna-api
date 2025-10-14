@@ -10,10 +10,10 @@ use App\Http\Controllers\Api\Admin\FundsController;
 use App\Http\Controllers\Api\Admin\IeoController;
 use App\Http\Controllers\Api\Admin\MarketController as AppMarketController;
 use App\Http\Controllers\Api\Admin\MenuController;
-use App\Http\Controllers\Api\Admin\OtcController;
-use App\Http\Controllers\Api\App\OtcController as AppOtcController;
-use App\Http\Controllers\Api\Admin\RoleController;
 use App\Http\Controllers\Api\Admin\OrderController;
+use App\Http\Controllers\Api\Admin\OtcController;
+use App\Http\Controllers\Api\Admin\PledgeController as AdminPledgeController;
+use App\Http\Controllers\Api\Admin\RoleController;
 use App\Http\Controllers\Api\Admin\UserController as AppUserController;
 use App\Http\Controllers\Api\App\ActivityController;
 use App\Http\Controllers\Api\App\AuthController;
@@ -22,13 +22,12 @@ use App\Http\Controllers\Api\App\FinancialController;
 use App\Http\Controllers\Api\App\FuturesController;
 use App\Http\Controllers\Api\App\IeoController as AppIeoController;
 use App\Http\Controllers\Api\App\MarketController;
+use App\Http\Controllers\Api\App\OtcController as AppOtcController;
 use App\Http\Controllers\Api\App\PledgeController;
-use App\Http\Controllers\Api\Admin\PledgeController as AdminPledgeController;
 use App\Http\Controllers\Api\App\SpotController;
 use App\Http\Controllers\Api\App\ThirdpartyController;
 use App\Http\Controllers\Api\App\UserController;
 use App\Http\Controllers\Api\App\WalletController;
-use App\Http\Middleware\Rbac;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -41,7 +40,6 @@ use Illuminate\Support\Facades\Route;
 | be assigned to the "api" middleware group. Make something great!
 |
 */
-
 
 Route::any('/thrid_party/wallet/callback', [ThirdpartyController::class, 'udunCallback']);
 Route::any('/third_party/engine/callback', [CommonController::class, 'engineCallback']);
@@ -62,7 +60,6 @@ Route::get('/app/protocol/aboutme', [CommonController::class, 'docAboutMe']);
 Route::get('/app/protocol/terms', [CommonController::class, 'docTermsAndConditions']);
 Route::get('/app/protocol/privacy', [CommonController::class, 'docPrivacyPolicy']);
 Route::get('/config', [CommonController::class, 'single']);
-
 
 Route::prefix('app')->middleware('auth:sanctum')->group(function () {
     Route::post('/images/upload', [CommonController::class, 'uploadImagePath']);
@@ -153,14 +150,15 @@ Route::prefix('app')->middleware('auth:sanctum')->group(function () {
         Route::get('withdraw/history', 'withdrawList');
         Route::get('summary', 'summary');
         Route::get('/transfer/avaiable', 'allowTransferSpotMoney');
+        Route::get('/transfer/order', 'transferList');
     });
 
     Route::prefix('order/spot')->controller(SpotController::class)->group(function () {
         Route::get('/', 'orders');
         Route::post('/', 'create');
         Route::post('/cancel', 'cancel');
-        Route::post('/instant/exchange', 'instant');   //闪兑交易
-        Route::get('/instant/exchange', 'instantLogs');//闪兑交易记录
+        Route::post('/instant/exchange', 'instant');   // 闪兑交易
+        Route::get('/instant/exchange', 'instantLogs'); // 闪兑交易记录
     });
 
     Route::prefix('order/futures')->controller(FuturesController::class)->group(function () {
@@ -187,16 +185,15 @@ Route::prefix('app')->middleware('auth:sanctum')->group(function () {
 
 });
 
-//Route::post('aaa', [\App\Http\Controllers\Api\Admin\MarketController::class, 'createNewBotTask']);
-//Route::post('bbb', [\App\Http\Controllers\Api\Admin\MarketController::class, 'bbb']);
-//Route::get('ccc', [\App\Http\Controllers\Api\Admin\MarketController::class, 'ccc']);
-//Route::post('ddd', [\App\Http\Controllers\Api\Admin\MarketController::class, 'createKline']);
+// Route::post('aaa', [\App\Http\Controllers\Api\Admin\MarketController::class, 'createNewBotTask']);
+// Route::post('bbb', [\App\Http\Controllers\Api\Admin\MarketController::class, 'bbb']);
+// Route::get('ccc', [\App\Http\Controllers\Api\Admin\MarketController::class, 'ccc']);
+// Route::post('ddd', [\App\Http\Controllers\Api\Admin\MarketController::class, 'createKline']);
 
 // Admin API Resource
 Route::post('/admin/login', [AppAuthController::class, 'login']);
-Route::get('admin/menu/selector', [MenuController::class, 'selector']);//菜单选择框
-Route::get('admin/role/selector', [RoleController::class, 'selector']);//角色选择框
-
+Route::get('admin/menu/selector', [MenuController::class, 'selector']); // 菜单选择框
+Route::get('admin/role/selector', [RoleController::class, 'selector']); // 角色选择框
 
 Route::prefix('admin')->middleware('auth:admin')->group(function () {
     Route::post('/images/upload', [AdminCommonController::class, 'uploadImagePath']);
@@ -231,32 +228,32 @@ Route::prefix('admin')->middleware('auth:admin')->group(function () {
         Route::post('/bindParent', 'bindParent');
         Route::post('/cancelBindParent', 'cancelBindParent');
 
-        Route::get('show', 'list');                        //列表
-        Route::post('store', 'store');                     //新增
-        Route::post('destroy/{id}', 'destroy');            //删除
-        Route::post('update/{id}', 'update');              //修改
-        Route::get('detail/{id}', 'detail');               //详细信息
-        Route::post('resetPwd/{id}', 'resetPwd');          //重置密码
-        Route::post('freeze/{id}', 'freeze');              //冻结账号
-        Route::post('assignRole/{id}/{rid}', 'assignRole');//分配角色
+        Route::get('show', 'list');                        // 列表
+        Route::post('store', 'store');                     // 新增
+        Route::post('destroy/{id}', 'destroy');            // 删除
+        Route::post('update/{id}', 'update');              // 修改
+        Route::get('detail/{id}', 'detail');               // 详细信息
+        Route::post('resetPwd/{id}', 'resetPwd');          // 重置密码
+        Route::post('freeze/{id}', 'freeze');              // 冻结账号
+        Route::post('assignRole/{id}/{rid}', 'assignRole'); // 分配角色
     });
 
     Route::prefix('menu')->controller(MenuController::class)->group(function () {
-        Route::get('index', 'index');          //个人展示菜单
-        Route::get('show', 'show');            //管理列表
-        Route::post('store', 'store');         //新增
-        Route::post('destroy/{id}', 'destroy');//删除
-        Route::post('update/{id}', 'update');  //修改
-        Route::get('detail/{id}', 'detail');   //详细信息
+        Route::get('index', 'index');          // 个人展示菜单
+        Route::get('show', 'show');            // 管理列表
+        Route::post('store', 'store');         // 新增
+        Route::post('destroy/{id}', 'destroy'); // 删除
+        Route::post('update/{id}', 'update');  // 修改
+        Route::get('detail/{id}', 'detail');   // 详细信息
     });
 
     Route::prefix('role')->controller(RoleController::class)->group(function () {
-        Route::get('show', 'show');                    //列表
-        Route::post('store', 'store');                 //新增
-        Route::post('destroy/{id}', 'destroy');        //删除
-        Route::post('update/{id}', 'update');          //修改
-        Route::get('detail/{id}', 'detail');           //详细信息
-        Route::post('assignMenus/{id}', 'assignMenus');//分配菜单
+        Route::get('show', 'show');                    // 列表
+        Route::post('store', 'store');                 // 新增
+        Route::post('destroy/{id}', 'destroy');        // 删除
+        Route::post('update/{id}', 'update');          // 修改
+        Route::get('detail/{id}', 'detail');           // 详细信息
+        Route::post('assignMenus/{id}', 'assignMenus'); // 分配菜单
     });
 
     Route::prefix('config')->controller(ConfigController::class)->group(function () {
@@ -320,7 +317,7 @@ Route::prefix('admin')->middleware('auth:admin')->group(function () {
         Route::get('/', 'list');
         Route::get('/level', 'userLevels');
         Route::post('/setting', 'setting');
-        Route::post('/bind', 'bindSalesman');//绑定用户所属的业务员
+        Route::post('/bind', 'bindSalesman'); // 绑定用户所属的业务员
         Route::get('/wallet/spot', 'userSpotWallet');
         Route::get('/wallet/derivative', 'userDerivativeWallet');
         Route::get('/wallet/spot/flow', 'spotWalletFlow');
@@ -351,20 +348,20 @@ Route::prefix('admin')->middleware('auth:admin')->group(function () {
     });
 
     Route::prefix('pledge')->controller(AdminPledgeController::class)->group(function () {
-        Route::get('/coins', 'coins');           //可选币种集合
-        Route::get('/config/coin', 'coinConfig');//列表
+        Route::get('/coins', 'coins');           // 可选币种集合
+        Route::get('/config/coin', 'coinConfig'); // 列表
         Route::get('/config/duration', 'durationConfig');
 
-        Route::post('/config/coin/add', 'addCoinConfig');//新增
+        Route::post('/config/coin/add', 'addCoinConfig'); // 新增
         Route::post('/config/duration/add', 'addDurationConfig');
 
-        Route::post('/config/coin/drop', 'dropCoinConfig');//删除
+        Route::post('/config/coin/drop', 'dropCoinConfig'); // 删除
         Route::post('/config/duration/drop', 'dropDurationConfig');
 
-        Route::get('/orders', 'orders');     //订单列表
-        Route::post('/audit', 'audit');      //审核
-        Route::post('/settle', 'settle');    //人工执行结算
-        Route::post('/rollback', 'rollback');//回撤订单
+        Route::get('/orders', 'orders');     // 订单列表
+        Route::post('/audit', 'audit');      // 审核
+        Route::post('/settle', 'settle');    // 人工执行结算
+        Route::post('/rollback', 'rollback'); // 回撤订单
     });
 
     Route::prefix('otc')->controller(OtcController::class)->group(function () {
