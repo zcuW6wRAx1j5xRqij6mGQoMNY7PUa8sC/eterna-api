@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
+// docker healthcheck route
+Route::get('/healthcheck', function () {
+    return response('ok');
 });
