@@ -1,6 +1,8 @@
 #!/bin/bash
 
-# 获取 git commit ID
+# 确保旧的compose容器被停止和移除
+docker compose down
+
 GIT_COMMIT=$(git rev-parse --short HEAD)
 echo "Using Git Commit ID: $GIT_COMMIT"
 
@@ -19,10 +21,8 @@ else
     echo "Base image $BASE_IMAGE already exists. Skipping build."
 fi
 
-# 设置环境变量并构建
 export GIT_COMMIT=$GIT_COMMIT
 
-# 构建并启动容器
 docker compose build --build-arg GIT_COMMIT=$GIT_COMMIT
 docker compose up -d
 
