@@ -12,8 +12,8 @@ services:
       PHP_POST_MAX_SIZE: "100M"
       PHP_UPLOAD_MAX_FILE_SIZE: "100M"
       PHP_DATE_TIMEZONE: "UTC"
-      AUTORUN_ENABLED: true # 准许自动执行脚本 cache相关
       AUTORUN_LARAVEL_MIGRATION: false # 禁用自动迁移
+      AUTORUN_ENABLED: true # 准许自动执行脚本 cache相关
     volumes:
       - ./:/var/www/html/
     healthcheck:
