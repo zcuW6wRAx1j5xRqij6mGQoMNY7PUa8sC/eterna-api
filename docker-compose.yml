@@ -1,6 +1,8 @@
 services:
   php:
-    image: serversideup/php:8.3-fpm-apache
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "8090:8080"
     environment:
@@ -8,8 +10,8 @@ services:
       PHP_POST_MAX_SIZE: "100M"
       PHP_UPLOAD_MAX_FILE_SIZE: "100M"
       PHP_DATE_TIMEZONE: "UTC"
-      AUTORUN_ENABLED: true // 准许自动执行脚本 cache相关
-      AUTORUN_LARAVEL_MIGRATION: false // 禁用自动迁移
+      AUTORUN_ENABLED: true # 准许自动执行脚本 cache相关
+      AUTORUN_LARAVEL_MIGRATION: false # 禁用自动迁移
     volumes:
       - ./:/var/www/html/
     healthcheck:
@@ -18,7 +20,9 @@ services:
       timeout: 10s
       retries: 3
   php-work: 
-    image: serversideup/php:8.3-cli
+    build:
+      context: .
+      dockerfile: Dockerfile
     working_dir: /var/www/html/
     volumes:
       - ./:/var/www/html/
@@ -28,7 +32,9 @@ services:
       test: ["CMD", "healthcheck-schedule"]
       start_period: 10s
   php-queue:
-    image: serversideup/php:8.3-cli
+    build:
+      context: .
+      dockerfile: Dockerfile
     working_dir: /var/www/html/
     volumes:
       - ./:/var/www/html/
