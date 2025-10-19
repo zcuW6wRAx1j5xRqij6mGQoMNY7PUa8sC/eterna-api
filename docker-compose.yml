@@ -1,3 +1,7 @@
+networks:
+  appnet:
+    external: true
+
 services:
   php:
     build:
@@ -21,6 +25,8 @@ services:
       interval: 1m30s
       timeout: 10s
       retries: 3
+    networks:
+      - appnet
   php-work: 
     image: netblaze/eterna-api:${GIT_COMMIT:-latest}
     container_name: php-work
@@ -30,6 +36,8 @@ services:
     healthcheck:
       test: ["CMD", "healthcheck-schedule"]
       start_period: 10s
+    networks:
+      - appnet
   php-queue:
     image: netblaze/eterna-api:${GIT_COMMIT:-latest}
     container_name: php-queue
@@ -39,3 +47,5 @@ services:
     healthcheck:
       test: ["CMD", "healthcheck-queue"]
       start_period: 10s
+    networks:
+      - appnet
