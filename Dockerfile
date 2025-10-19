@@ -16,6 +16,3 @@ USER www-data
 # 处理composer依赖
 RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
 
-# RUN chown -R www-data:www-data /var/www/html \
-#     && chmod -R 755 /var/www/html/storage \
-#     && chmod -R 755 /var/www/html/bootstrap/cache
