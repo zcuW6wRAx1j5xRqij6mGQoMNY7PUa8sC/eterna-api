@@ -17,7 +17,7 @@ services:
       AUTORUN_LARAVEL_MIGRATION: false # 禁用自动迁移
       AUTORUN_ENABLED: true # 准许自动执行脚本 cache相关
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/healthcheck"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/healthcheck"]
       interval: 1m30s
       timeout: 10s
       retries: 3
