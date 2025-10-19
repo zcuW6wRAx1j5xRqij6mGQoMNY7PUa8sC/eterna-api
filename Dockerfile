@@ -6,12 +6,16 @@ LABEL git.commit=$GIT_COMMIT
 USER root
 
 # 安装必要的 PHP 扩展
+# RUN install-php-extensions bcmath intl pdo_mysql zip
 RUN install-php-extensions bcmath intl
 
 # 设置工作目录
 WORKDIR /var/www/html
-# 先复制依赖文件（优化 Docker 层缓存）
+
+# 方案1：先复制依赖文件，然后复制必要的自动加载文件
 COPY --chown=www-data:www-data composer.json composer.lock ./
+COPY --chown=www-data:www-data app/Helpers/ ./app/Helpers/
+COPY --chown=www-data:www-data app/Internal/ ./app/Internal/
 
 # 切换到 www-data 用户安装依赖
 USER www-data
