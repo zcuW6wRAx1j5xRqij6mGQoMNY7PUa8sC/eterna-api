@@ -5,6 +5,7 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8090:8080"
+    container_name: php-main
     environment:
       PHP_OPCACHE_ENABLE: 1
       PHP_POST_MAX_SIZE: "100M"
@@ -23,6 +24,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: php-work
     working_dir: /var/www/html/
     volumes:
       - ./:/var/www/html/
@@ -35,6 +37,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: php-queue
     working_dir: /var/www/html/
     volumes:
       - ./:/var/www/html/
