@@ -3,7 +3,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: netblaze/eterna-api:latest
+      args:
+        GIT_COMMIT: ${GIT_COMMIT:-latest}
+    image: netblaze/eterna-api:${GIT_COMMIT:-latest}
     ports:
       - "8090:8080"
     container_name: php-main
@@ -14,30 +16,24 @@ services:
       PHP_DATE_TIMEZONE: "UTC"
       AUTORUN_LARAVEL_MIGRATION: false # 禁用自动迁移
       AUTORUN_ENABLED: true # 准许自动执行脚本 cache相关
-    volumes:
-      - ./:/var/www/html/
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/healthcheck"]
       interval: 1m30s
       timeout: 10s
       retries: 3
   php-work: 
-    image: netblaze/eterna-api:latest
+    image: netblaze/eterna-api:${GIT_COMMIT:-latest}
     container_name: php-work
     working_dir: /var/www/html/
-    volumes:
-      - ./:/var/www/html/
     command: ["php", "/var/www/html/artisan", "schedule:work"]
     stop_signal: SIGTERM 
     healthcheck:
       test: ["CMD", "healthcheck-schedule"]
       start_period: 10s
   php-queue:
-    image: netblaze/eterna-api:latest
+    image: netblaze/eterna-api:${GIT_COMMIT:-latest}
     container_name: php-queue
     working_dir: /var/www/html/
-    volumes:
-      - ./:/var/www/html/
     command: ["php", "/var/www/html/artisan", "queue:work", "--tries=3"]
     stop_signal: SIGTERM 
     healthcheck:
