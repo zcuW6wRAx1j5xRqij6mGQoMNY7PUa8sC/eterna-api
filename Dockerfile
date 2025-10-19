@@ -1,12 +1,9 @@
-FROM serversideup/php:8.3-fpm-apache
+FROM netblaze/php-fpm-apache:latest
 
 ARG GIT_COMMIT=unknown
 LABEL git.commit=$GIT_COMMIT
 
 USER root
-
-# RUN install-php-extensions bcmath intl pdo_mysql zip
-RUN install-php-extensions bcmath intl
 
 WORKDIR /var/www/html
 

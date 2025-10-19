@@ -1,4 +1,4 @@
-FROM serversideup/php:8.3-cli-alpine
+FROM serversideup/php:8.4-fpm-apache
 
 USER root
 
