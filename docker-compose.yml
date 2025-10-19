@@ -3,6 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    image: netblaze/eterna-api:latest
     ports:
       - "8090:8080"
     container_name: php-main
@@ -21,9 +22,7 @@ services:
       timeout: 10s
       retries: 3
   php-work: 
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: netblaze/eterna-api:latest
     container_name: php-work
     working_dir: /var/www/html/
     volumes:
@@ -34,9 +33,7 @@ services:
       test: ["CMD", "healthcheck-schedule"]
       start_period: 10s
   php-queue:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: netblaze/eterna-api:latest
     container_name: php-queue
     working_dir: /var/www/html/
     volumes:
