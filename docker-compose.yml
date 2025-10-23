@@ -7,12 +7,16 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: development
       args:
-        GIT_COMMIT: ${GIT_COMMIT:-latest}
-    image: netblaze/eterna-api:${GIT_COMMIT:-latest}
+        USER_ID: $USER_ID
+        GROUP_ID: $GROUP_ID
+    image: netblaze/eterna-api:dev-local
     ports:
       - "8090:8080"
-    container_name: php-main
+    container_name: php-server
+    volumes:
+      - .:/var/www/html
     environment:
       PHP_OPCACHE_ENABLE: 1
       PHP_POST_MAX_SIZE: "100M"
@@ -25,10 +29,14 @@ services:
       interval: 1m30s
       timeout: 10s
       retries: 3
+    restart: unless-stopped
+    stop_grace_period: 20s
     networks:
       - appnet
   php-work: 
-    image: netblaze/eterna-api:${GIT_COMMIT:-latest}
+    image: netblaze/eterna-api:dev-local
+    volumes:
+      - .:/var/www/html
     container_name: php-work
     working_dir: /var/www/html/
     command: ["php", "/var/www/html/artisan", "schedule:work"]
@@ -36,14 +44,20 @@ services:
     healthcheck:
       test: ["CMD", "healthcheck-schedule"]
       start_period: 10s
+    restart: unless-stopped
+    stop_grace_period: 20s
     networks:
       - appnet
   php-queue:
-    image: netblaze/eterna-api:${GIT_COMMIT:-latest}
+    image: netblaze/eterna-api:dev-local
+    volumes:
+      - .:/var/www/html
     container_name: php-queue
     working_dir: /var/www/html/
-    command: ["php", "/var/www/html/artisan", "queue:work", "--tries=3"]
+    command: ["php", "/var/www/html/artisan", "queue:work", "--tries=3", "--sleep=3", "--max-jobs=1000", "--timeout=120"]
     stop_signal: SIGTERM 
+    restart: unless-stopped
+    stop_grace_period: 20s
     healthcheck:
       test: ["CMD", "healthcheck-queue"]
       start_period: 10s

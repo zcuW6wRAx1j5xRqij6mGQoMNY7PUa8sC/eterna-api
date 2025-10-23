@@ -1,11 +1,42 @@
-FROM netblaze/php-fpm-apache:latest
+############################################
+# Base Image
+############################################
+
+FROM serversideup/php:8.4-fpm-apache AS base
+
+USER root
+
+# Install required PHP extensions
+RUN install-php-extensions bcmath intl
+
+WORKDIR /var/www/html
+
+############################################
+# Development Image
+############################################
+FROM base AS development
+
+ARG USER_ID
+ARG GROUP_ID
+
+# Switch to root so we can set the user ID and group ID
+USER root
+RUN docker-php-serversideup-set-id www-data $USER_ID:$GROUP_ID  && \
+    docker-php-serversideup-set-file-permissions --owner $USER_ID:$GROUP_ID --service apache
+
+USER www-data
+
+
+
+############################################
+# Production Image
+############################################
+FROM base AS prod
 
 ARG GIT_COMMIT=unknown
 LABEL git.commit=$GIT_COMMIT
 
 USER root
-
-WORKDIR /var/www/html
 
 COPY --chown=www-data:www-data . /var/www/html
 
